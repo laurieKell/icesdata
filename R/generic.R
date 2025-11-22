@@ -141,7 +141,7 @@ setGeneric("msyVirgin", function(object, ...) standardGeneric("msyVirgin"))
 #' processError(ple4brp)
 #' }
 setGeneric("processError", function(object, ...) standardGeneric("processError"))
-   
+
 #' Extract Time Series Statistics from FLStock Objects
 #'
 #' @description

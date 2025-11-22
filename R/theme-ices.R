@@ -65,7 +65,7 @@ theme_ices <- function(base_size = 12,
     base_line_size = base_line_size,
     base_rect_size = base_rect_size
   )
-  
+
   # Customize the theme
   theme <- theme + ggplot2::theme(
     # Panel styling
