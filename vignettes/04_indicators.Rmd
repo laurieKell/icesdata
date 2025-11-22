@@ -78,19 +78,10 @@ Understanding the structure of marine food webs and how they, as well as the ser
 
 ```{r, data-load}
 # Load ICES data using standard data() function
-data(icesdata)
-data(info)
-data(spp)
-data(lw)
+load_all_ices_data()
 
 # Set up vignette data directory for saving outputs
-vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
-if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
-  vignetteDataDir = file.path("data", "vignette-outputs")
-  if (!dir.exists(vignetteDataDir)) {
-    dir.create(vignetteDataDir, recursive = TRUE)
-  }
-}
+vignetteDataDir = get_vignette_output_dir()
 
 # SS3 directory - will fail if not present
 ss3Dir = file.path("data", "raw", "ss3")

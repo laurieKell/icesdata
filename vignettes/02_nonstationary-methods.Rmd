@@ -67,19 +67,11 @@ devtools::install_github("lauriekell/FLCandy", ref = "refactored")
 ```
 
 ```{r, data-load}
-# Load ICES data using standard data() function
-data(icesdata)
-data(info)
-data(spp)
+# Load all ICES data
+load_all_ices_data()
 
 # Set up vignette data directory for saving outputs
-vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
-if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
-  vignetteDataDir = file.path("data", "vignette-outputs")
-  if (!dir.exists(vignetteDataDir)) {
-    dir.create(vignetteDataDir, recursive = TRUE)
-  }
-}
+vignetteDataDir = get_vignette_output_dir()
 ```
 
 ### Summaries

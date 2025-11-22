@@ -64,20 +64,12 @@ Natural mortality (M) has been shown to be a function of size-at-age [@lorenzen2
 ```
 
 ```{r, data-load}
-# Load ICES data using standard data() function
-data(icesdata)
-data(info)
-data(spp)
+# Load all ICES data
+load_all_ices_data()
 data(lw)
 
 # Set up vignette data directory for saving outputs
-vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
-if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
-  vignetteDataDir = file.path("data", "vignette-outputs")
-  if (!dir.exists(vignetteDataDir)) {
-    dir.create(vignetteDataDir, recursive = TRUE)
-  }
-}
+vignetteDataDir = get_vignette_output_dir()
 ```
 
 ### Natural mortality

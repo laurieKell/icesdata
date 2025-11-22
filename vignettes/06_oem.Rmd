@@ -109,19 +109,13 @@ This vignette demonstrates the Hierarchical Assessments Framework (HAF) for comp
 
 ```{r, data-load}
 # Load ICES data using standard data() function
-data(icesdata)
+load_all_ices_data()
 data(info)
 data(spp)
 data(lw)
 
 # Set up vignette data directory for saving outputs
-vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
-if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
-  vignetteDataDir = file.path("data", "vignette-outputs")
-  if (!dir.exists(vignetteDataDir)) {
-    dir.create(vignetteDataDir, recursive = TRUE)
-  }
-}
+vignetteDataDir = get_vignette_output_dir()
 ```
 
 ## Outline
