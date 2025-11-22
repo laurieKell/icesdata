@@ -19,13 +19,14 @@
 #'   }
 #' @source ICES Working Group on Stock Assessment Methods
 #' @usage 
-#' # Load using helper function (recommended for subfolder structure)
+#' # Standard R data() function (recommended)
+#' data(icesdata)
+#' 
+#' # Or load using helper function (also works with subfolder structure)
 #' load_ices_stocks()
 #' 
 #' # Or load directly from file path
 #' load(system.file("data/stocks/icesdata.RData", package = "icesdata"))
-#' 
-#' # Note: data(icesdata) won't work with subfolder structure
 #' @examples
 #' \dontrun{
 #' data(icesdata)
@@ -47,13 +48,14 @@
 #'   }
 #' @source ICES Working Group on Stock Assessment Methods
 #' @usage 
-#' # Load using helper function (recommended for subfolder structure)
+#' # Standard R data() function (recommended)
+#' data(info)
+#' 
+#' # Or load using helper function (also works with subfolder structure)
 #' load_ices_metadata()
 #' 
 #' # Or load directly from file path
 #' load(system.file("data/metadata/info.RData", package = "icesdata"))
-#' 
-#' # Note: data(info) won't work with subfolder structure
 #' @examples
 #' \dontrun{
 #' data(info)
@@ -74,13 +76,14 @@
 #'   }
 #' @source ICES Working Group on Stock Assessment Methods
 #' @usage 
-#' # Load using helper function (recommended for subfolder structure)
+#' # Standard R data() function (recommended)
+#' data(spp)
+#' 
+#' # Or load using helper function (also works with subfolder structure)
 #' load_ices_metadata()
 #' 
 #' # Or load directly from file path
 #' load(system.file("data/metadata/spp.RData", package = "icesdata"))
-#' 
-#' # Note: data(spp) won't work with subfolder structure
 #' @examples
 #' \dontrun{
 #' data(spp)
