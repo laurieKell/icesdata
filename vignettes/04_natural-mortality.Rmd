@@ -25,8 +25,8 @@ knitr::opts_chunk$set(
   dev = "png"
 )
 
-iFig <- 0
-iTab <- 0
+iFig = 0
+iTab = 0
 ```
 
 ```{r, libraries}
@@ -94,19 +94,19 @@ SMS estimates for the North Sea
 Natural mortality (M) has been shown to be a function of size-at-age [@lorenzen2022size], i.e. $M=aW^b$, where $b$ ~ -0.3. Choose $a$ so that M at age-at-maturity ($A_{50}$) is the same as in the ICES assessment.
 
 ```{r, k-lorenzen, echo=TRUE}
-m = plyr::mlply(names(ICESStocks), function(.id) {
+m = plyr::mlply(names(icesdata), function(.id) {
   print(.id)
   try({
-    m  = plyr::aaply(FLCore::m(ICESStocks[[.id]]), 1, mean)
-    wt = plyr::aaply(stock.wt(ICESStocks[[.id]]), 1, mean)
-    mat = plyr::aaply(mat(ICESStocks[[.id]]), 1, mean)
+    m  = plyr::aaply(FLCore::m(icesdata[[.id]]), 1, mean)
+    wt = plyr::aaply(stock.wt(icesdata[[.id]]), 1, mean)
+    mat = plyr::aaply(mat(icesdata[[.id]]), 1, mean)
     age = as.numeric(names(m))
     a50 = predict(loess(age ~ mat), newdata = 0.5)
     m50 = predict(loess(m ~ age), newdata = a50)
     w50 = predict(loess(wt ~ age), newdata = a50)
     
     a = m50 / (w50^-0.3)
-    a * stock.wt(ICESStocks[[.id]])^-0.3
+    a * stock.wt(icesdata[[.id]])^-0.3
   })
 })
 
@@ -115,24 +115,24 @@ save(m, file = file.path(vignetteDataDir, "mLorenzen.RData"))
 
 ```{r, m-vpa}
 .id = 6
-stk = ICESStocks[[.id]]
+stk = icesdata[[.id]]
 m(stk) = m[[.id]]
 
 library(FLAssess)
-plot(FLStocks("ICES" = ICESStocks[[.id]][-1],
+plot(FLStocks("ICES" = icesdata[[.id]][-1],
               "VPA" = (stk + VPA(stk))[-1]))
 ```
 
 ### Priors
 
 ```{r, priors}
-priors = plyr::ldply(ICESStocks, priorFn)
+priors = plyr::ldply(icesdata, priorFn)
 ```
 
 #### Time series
 
 ```{r, tseries}
-tseries = plyr::ldply(ICESStocks, dataFn)
+tseries = plyr::ldply(icesdata, dataFn)
 ```
 
 ### Equilibrium analysis
@@ -140,7 +140,7 @@ tseries = plyr::ldply(ICESStocks, dataFn)
 Take the average across all years for each stock, and fit a Beverton and Holt stock recruitment relationship
 
 ```{r, eq}
-eq = FLBRPs(plyr::llply(ICESStocks, eqlFn))
+eq = FLBRPs(plyr::llply(icesdata, eqlFn))
 
 save(eq, file = file.path(vignetteDataDir, "eq.RData"))
 ```
@@ -154,9 +154,9 @@ peFn = function(stk, eq, stock = FLCore::ssb) {
    catch(stk) + sp(stk, eq, stock)) / stock(stk)
 }
 
-pe = plyr::mdply(names(ICESStocks), function(.id) {
+pe = plyr::mdply(names(icesdata), function(.id) {
   print(.id)
-  rtn = try(peFn(ICESStocks[[.id]], eq[[.id]]))
+  rtn = try(peFn(icesdata[[.id]], eq[[.id]]))
   if ("try-error" %in% class(rtn)) return(NULL)
   cbind(.id = .id, as.data.frame(rtn, drop = TRUE))
 })[,-1]
@@ -178,13 +178,13 @@ ggplot(pe) +
 #### $SPR_{0}$ time series
 
 ```{r, spr0}
-spr0Par = plyr::llply(ICESStocks, function(x) {
+spr0Par = plyr::llply(icesdata, function(x) {
   res = spr0Yr(x)
   FLCore::FLPar(array(c(res), dim = c(1, dim(res)[2]),
                        dimnames = list(params = "spr0", iter = seq(dim(res)[2]))))
 })
 
-spr0 = plyr::ldply(ICESStocks, function(x) {
+spr0 = plyr::ldply(icesdata, function(x) {
   as.data.frame(spr0Yr(x), drop = TRUE)
 })
 
@@ -206,14 +206,14 @@ save(spr0, file = file.path(vignetteDataDir, "spr0.RData"))
 
 ```{r, sr}
 library(FLSRTMB)
-sr = FLSRs(lapply(ICESStocks, function(x) {
+sr = FLSRs(lapply(icesdata, function(x) {
   srr = as.FLSR(x, model = bevholtSV)
   res = ftmb(srr, s.est = TRUE, s = x@fishlife["s"],
              s.logitsd = x@fishlife["sd.logit.s"],
              spr0 = spr0Yr(x))
   res
 }))
-names(sr) = names(ICESStocks)
+names(sr) = names(icesdata)
 
 save(sr, file = file.path(vignetteDataDir, "sr.RData"))
 ```
@@ -221,8 +221,8 @@ save(sr, file = file.path(vignetteDataDir, "sr.RData"))
 #### Reference Points
 
 ```{r, msy-data}
-rf = plyr::mdply(names(ICESStocks), function(.id) {
-  rf = cbind(.id = .id, nonStationarity(ICESStocks[[.id]], sr = sr[[.id]]))
+rf = plyr::mdply(names(icesdata), function(.id) {
+  rf = cbind(.id = .id, nonStationarity(icesdata[[.id]], sr = sr[[.id]]))
   rf
 })
 
@@ -242,5 +242,5 @@ save(rf, file = file.path(vignetteDataDir, "rf.RData"))
 # }
 ```
 
-**Figure `r iFig <- iFig + 1; iFig`** Examples of high and low entropy stocks
+**Figure `r iFig = iFig + 1; iFig`** Examples of high and low entropy stocks
 

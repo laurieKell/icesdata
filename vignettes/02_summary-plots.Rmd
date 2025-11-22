@@ -25,8 +25,8 @@ knitr::opts_chunk$set(
   dev = "png"
 )
 
-iFig <- 0
-iTab <- 0
+iFig = 0
+iTab = 0
 ```
 
 ```{r, libraries}
@@ -112,7 +112,7 @@ if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
 Biological assumptions and variation by age, and year
 
 ```{r, summaries}
-vary = plyr::ldply(ICESStocks, function(x) data.frame(
+vary = plyr::ldply(icesdata, function(x) data.frame(
   m.age   = !all(FLCore::m(x)[1,] == apply(FLCore::m(x), 2, mean)),
   m.yr    = !all(apply(FLCore::m(x), 2, mean) == mean(FLCore::m(x)[,1])),
   mass.yr = !all(apply(stock.wt(x), 2, mean) == mean(stock.wt(x)[,1])),
@@ -132,13 +132,13 @@ save(vary, file = file.path(vignetteDataDir, "vary.RData"))
 Take the average values at-age across all years for each stock, and fit a Beverton and Holt stock recruitment relationship using steepness from `FishBase`.
 
 ```{r, eq}
-eq = plyr::mlply(names(ICESStocks), function(.id) {
-  rtn = try(FLCandy::eqlFn(ICESStocks[[.id]]))
+eq = plyr::mlply(names(icesdata), function(.id) {
+  rtn = try(FLCandy::eqlFn(icesdata[[.id]]))
   if ("try-error" %in% class(rtn)) return(NULL)
   return(rtn)
 })
 
-names(eq) = names(ICESStocks)
+names(eq) = names(icesdata)
 
 save(eq, file = file.path(vignetteDataDir, "eq.RData"))
 ```
@@ -154,8 +154,8 @@ Fn = function(stk, eq, stock = FLCore::ssb) {
    catch(stk) + sp(stk, eq, stock)) / stock(stk)
 }
 
-pe = plyr::mdply(names(ICESStocks), function(.id) {
-  rtn = try(Fn(ICESStocks[[.id]], eq[[.id]]))
+pe = plyr::mdply(names(icesdata), function(.id) {
+  rtn = try(Fn(icesdata[[.id]], eq[[.id]]))
   if ("try-error" %in% class(rtn)) return(NULL)
   cbind(.id = .id, as.data.frame(rtn, drop = TRUE))
 })[,-1]
@@ -178,18 +178,18 @@ ggplot(pe) +
 save(pe, file = file.path(vignetteDataDir, "pe.RData"))
 ```
 
-**Figure `r iFig <- iFig + 1; iFig`** Process error
+**Figure `r iFig = iFig + 1; iFig`** Process error
 
 #### $SPR_{0}$ time series
 
 ```{r, spr0}
-spr0Par = plyr::llply(ICESStocks, function(x) {
+spr0Par = plyr::llply(icesdata, function(x) {
   res = FLCandy::spr0Yr(x)
   FLCore::FLPar(array(c(res), dim = c(1, dim(res)[2]),
                       dimnames = list(params = "spr0", iter = seq(dim(res)[2]))))
 })
 
-spr0 = plyr::ldply(ICESStocks, function(x) {
+spr0 = plyr::ldply(icesdata, function(x) {
   transform(as.data.frame(FLCandy::spr0Yr(x)), year = year, spr0 = data)
 })
 
@@ -216,23 +216,23 @@ save(spr0, spr0Par, file = file.path(vignetteDataDir, "spr0.RData"))
 ```{r, sr, eval=FALSE}
 # Stock-recruitment relationships require FLCandy functions
 # This section is disabled as it requires external dependencies
-# if (exists("ICESStocks") && requireNamespace("FLCandy", quietly = TRUE) && 
+# if (exists("icesdata") && requireNamespace("FLCandy", quietly = TRUE) && 
 #     requireNamespace("FLSRTMB", quietly = TRUE)) {
-#   sr <- FLSRs(lapply(ICESStocks, function(x) {
+#   sr <- FLSRs(lapply(icesdata, function(x) {
 #     srr <- as.FLSR(x, model = bevholtSV)
 #     res <- FLCandy::ftmb(srr, s.est = TRUE, s = x@fishlife["s"],
 #                          s.logitsd = x@fishlife["sd.logit.s"],
 #                          spr0 = FLCandy::spr0Yr(x))
 #     res
 #   }))
-#   names(sr) <- names(ICESStocks)
+#   names(sr) <- names(icesdata)
 # }
 ```
 
 ```{r, virgin}
-virgin = plyr::mdply(names(ICESStocks), function(.id) {
+virgin = plyr::mdply(names(icesdata), function(.id) {
   cbind(.id = .id, model.frame(srPar[[.id]]),
-        year = unlist(dimnames(FLCandy::spr0Yr(ICESStocks[[.id]]))$year))
+        year = unlist(dimnames(FLCandy::spr0Yr(icesdata[[.id]]))$year))
 })[,-c(1,6)]
 virgin$year = as.numeric(virgin$year)
 
@@ -257,8 +257,8 @@ save(virgin, file = file.path(vignetteDataDir, "virgin.RData"))
 ### Reference Points
 
 ```{r, msy-data}
-rf = plyr::mdply(names(ICESStocks), function(.id) {
-  rf = cbind(.id = .id, FLCandy::nonStationarity(ICESStocks[[.id]], sr = sr[[.id]]))
+rf = plyr::mdply(names(icesdata), function(.id) {
+  rf = cbind(.id = .id, FLCandy::nonStationarity(icesdata[[.id]], sr = sr[[.id]]))
   if ("try-error" %in% class(rf)) return(NULL)
   rf
 })
@@ -320,8 +320,8 @@ ggplot(subset(rf, refpt == "msy")) +
 ```
 
 ```{r, abi}
-abi = plyr::mdply(names(ICESStocks), function(id) {
-  rtn = cbind(.id = id, as.data.frame(FLCandy::abi(ICESStocks[[id]], eq[[id]]), drop = TRUE))
+abi = plyr::mdply(names(icesdata), function(id) {
+  rtn = cbind(.id = id, as.data.frame(FLCandy::abi(icesdata[[id]], eq[[id]]), drop = TRUE))
   if ("try-error" %in% class(rtn)) return(NULL)
   rtn
 })

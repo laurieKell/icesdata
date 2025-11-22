@@ -25,8 +25,8 @@ knitr::opts_chunk$set(
   dev = "png"
 )
 
-iFig <- 0
-iTab <- 0
+iFig = 0
+iTab = 0
 ```
 
 ```{r, libraries}
@@ -102,12 +102,12 @@ dat = merge(vary, plyr::ddply(pe, .(.id), with,
 dat = merge(dat, info[, -10], by = ".id")
 
 # Add mean M
-dat = merge(dat, plyr::ldply(ICESStocks, function(x) {
+dat = merge(dat, plyr::ldply(icesdata, function(x) {
   data.frame(M = mean(FLCore::m(x)))
 }), by = ".id")
 
 # Add FishLife parameters
-dat = merge(dat, plyr::ldply(ICESStocks, function(x) {
+dat = merge(dat, plyr::ldply(icesdata, function(x) {
   attributes(x)$fishlife
 }), by = ".id")
 
@@ -154,7 +154,7 @@ p2
 treePlot()
 ```
 
-**Figure `r iFig <- iFig + 1; iFig`** Regression tree and variable importance
+**Figure `r iFig = iFig + 1; iFig`** Regression tree and variable importance
 
 ```{r, clustering}
 library(dtwclust)
@@ -195,5 +195,5 @@ ggplot(dmMelted) +
        y = "Process Error")
 ```
 
-**Figure `r iFig <- iFig + 1; iFig`** DTW clustering of process error time series
+**Figure `r iFig = iFig + 1; iFig`** DTW clustering of process error time series
 

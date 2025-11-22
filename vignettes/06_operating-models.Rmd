@@ -25,8 +25,8 @@ knitr::opts_chunk$set(
   dev = "png"
 )
 
-iFig <- 0
-iTab <- 0
+iFig = 0
+iTab = 0
 ```
 
 ```{r, libraries}
@@ -85,5 +85,5 @@ if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
 # }
 ```
 
-**Figure `r iFig <- iFig + 1; iFig`** Examples of high and low entropy stocks
+**Figure `r iFig = iFig + 1; iFig`** Examples of high and low entropy stocks
 

@@ -25,8 +25,8 @@ knitr::opts_chunk$set(
   dev = "png"
 )
 
-iFig <- 0
-iTab <- 0
+iFig = 0
+iTab = 0
 ```
 
 ```{r, libraries}
@@ -79,7 +79,7 @@ if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
 ### Priors
 
 ```{r, priors}
-priors = plyr::ldply(ICESStocks, priorFn)
+priors = plyr::ldply(icesdata, priorFn)
 
 save(priors, file = file.path(vignetteDataDir, "priors.RData"))
 ```
@@ -87,7 +87,7 @@ save(priors, file = file.path(vignetteDataDir, "priors.RData"))
 #### Time series
 
 ```{r, tseries}
-tseries = plyr::ldply(ICESStocks, dataFn)
+tseries = plyr::ldply(icesdata, dataFn)
 
 save(tseries, file = file.path(vignetteDataDir, "tseries.RData"))
 ```

@@ -26,8 +26,8 @@ knitr::opts_chunk$set(
   dev = "png"
 )
 
-iFig <- 0
-iTab <- 0
+iFig = 0
+iTab = 0
 ```
 
 ```{r, libraries}
@@ -260,7 +260,7 @@ ggplot(plyr::ddply(ctc, .(.id), transform, catch = stdz(data))) +
        y = "")
 ```
 
-**Figure `r iFig <- iFig + 1; iFig`** ICES catches, these are those estimated by the model if
+**Figure `r iFig = iFig + 1; iFig`** ICES catches, these are those estimated by the model if
 a statistical catch-at-age method is used.
 
 ```{r, catch-1903, eval=FALSE}
@@ -311,7 +311,7 @@ a statistical catch-at-age method is used.
 # }
 ```
 
-**Figure `r iFig <- iFig + 1; iFig`** Indices of abundance.
+**Figure `r iFig = iFig + 1; iFig`** Indices of abundance.
 
 ## Session Info
 
