@@ -6,9 +6,11 @@
 ^cache$
 ^.*\.Rproj$
 
-# Data files (too large for build)
-^data/$
+# Data-raw directory (source data, not included in package)
 ^data-raw/$
+
+# Note: data/ directory IS included in package for lazy loading
+# Large data files (> 5MB) should be placed in vignettes/data/ instead
 
 # Documentation build artifacts
 ^docs/$

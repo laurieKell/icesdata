@@ -21,8 +21,9 @@ setMethod("ebiomass", signature(object="FLBRP"),
 
 #' Internal Function for Benchmark Extraction
 #'
-#' @param x An FLStock object
+#' @param object An FLStock object
 #' @return An FLPar object
+#' @keywords internal
 benchmarksFn <- function(object) {
   if ("logical"%in%is(attributes(object)$benchmark))
     return(FLCore::FLPar(fmsy=NA,flim=NA,fpa=NA,blim=NA,bpa=NA,btrigger=NA))
@@ -82,6 +83,7 @@ setMethod("benchmark", signature(object="FLBRP"), function(object) {
 #'
 #' @param object An FLStock object
 #' @return An FLPar object
+#' @keywords internal
 fishlifesFn <- function(object) {
   if ("logical"%in%is(attributes(object)$fishlife))
     return(FLCore::FLPar(Fmsy=NA,Flim=NA,Fpa=NA,Blim=NA,Bpa=NA,Btrigger=NA))
@@ -113,6 +115,7 @@ setMethod("fishlife", signature(object="FLStocks"), function(object) {
 #'
 #' @param object An FLStock object
 #' @return An FLPar object
+#' @keywords internal
 eqsimFn <- function(object) {
   if ("logical"%in%is(attributes(object)$eqsim))
     return(FLCore::FLPar(catchequi=NA,bmsy=NA,b0=NA,fmsyMedianC=NA,fmsyMedianL=NA,f5percRiskBlim=NA,flimEqsim=NA,r0=NA)) 
@@ -150,6 +153,7 @@ setMethod("eqsim", signature(object="FLStocks"), function(object) {
 #'
 #' @param object An FLStock object
 #' @return An FLPar object with life history parameters
+#' @keywords internal
 FLifeParFn <- function(object) {
   res=attributes(object)$fishlife
   
@@ -231,7 +235,7 @@ setMethod("FLifePar", signature(object="FLStocks"), function(object) {
 #' 
 #' @references 
 setMethod( 'kobe',  signature(path='FLStock',method="missing"), 
-           function(path,method){ 
+           function(path, method, ...){ 
                names(attributes(path)$eqsim)    =tolower(names(attributes(path)$eqsim))
                names(attributes(path)$benchmark)=tolower(names(attributes(path)$benchmark))
                
@@ -241,7 +245,7 @@ setMethod( 'kobe',  signature(path='FLStock',method="missing"),
                               "flim"    =function(x) ssb(x)%/%benchmark( x)["flim"])})
            
 setMethod( 'kobe',  signature(path='FLBRP',method="missing"), 
-           function(path,method){ 
+           function(path, method, ...){ 
              
              FLQuants(path, 
                       "stock"  =function(x) ssb.obs( x)%/%refpts(x)["msy","ssb"],
@@ -250,7 +254,7 @@ setMethod( 'kobe',  signature(path='FLBRP',method="missing"),
                       "flim"   =function(x) fbar.obs(x)%/%blim(x)["blim","harvest"])})
 
 setMethod( 'kobe',signature(path='FLBRP',method="logical"), 
-           function(path,method){ 
+           function(path, method, ...){ 
              
     kb =kobe(path)
     rtn=FLQuants(green      =as.FLQuant(kb$stock>=1&kb$harvest<=1),

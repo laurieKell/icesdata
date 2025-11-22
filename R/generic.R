@@ -80,7 +80,16 @@ setGeneric("abiMsy", function(object, ref = "msy", p = 0.9) {
 })
 
 
-setGeneric("crosstest", function(object,...)
+#' Cross-Test Analysis
+#'
+#' @description
+#' Generic function for cross-test analysis
+#'
+#' @param object An object to analyze
+#' @param ... Additional arguments
+#'
+#' @export
+setGeneric("crosstest", function(object, ...)
   standardGeneric("crosstest"))
 
 #' Calculate Blim Reference Point
@@ -175,6 +184,15 @@ setGeneric("processError", function(object, ...) standardGeneric("processError")
 #' @export
 setGeneric("tseries", function(object, ...) standardGeneric("tseries"))
 
+#' Global MSY Analysis
+#'
+#' @description
+#' Generic function to calculate global MSY (largest catch with knife-edge selection)
+#'
+#' @param object An object (typically FLBRP)
+#' @param ... Additional arguments
+#'
+#' @export
 setGeneric("globalMsy", function(object, ...)
   standardGeneric("globalMsy"))
 
@@ -366,7 +384,17 @@ setGeneric("eqsim", function(object, ...) {
   standardGeneric("eqsim")
 })
 
-setGeneric('kobe',  function(path,method) standardGeneric('kobe'))
+#' Kobe Plot Indicators
+#'
+#' @description
+#' Generic function to calculate Kobe plot indicators (SSB/BMSY and F/FMSY)
+#'
+#' @param path An object (typically FLStock or FLBRP)
+#' @param method Additional method parameter (optional)
+#' @param ... Additional arguments
+#'
+#' @export
+setGeneric('kobe',  function(path, method, ...) standardGeneric('kobe'))
 
 #' benchmark
 #'
@@ -385,18 +413,71 @@ setGeneric("benchmark", function(object, ...) {
 
 
 
+#' Inverse Age-Length Key
+#'
+#' @description
+#' Generic function for inverse age-length key analysis
+#'
+#' @param object An object containing length data
+#' @param model Growth model function (default: vonbert)
+#' @param age Age vector
+#' @param cv Coefficient of variation (default: 0.1)
+#' @param lmax Maximum length multiplier (default: 1.2)
+#' @param bin Length bin size (default: 1)
+#' @param max Maximum age (default: ceiling(object["linf"]*lmax))
+#' @param reflen Reference length (optional)
+#' @param ... Additional arguments
+#'
+#' @export
 setGeneric("invALK", function(object, model=vonbert, age, 
-                              cv=0.1, lmax=1.2, bin=1, max=ceiling(object["linf"]*lmax), reflen=NULL) 
+                              cv=0.1, lmax=1.2, bin=1, max=ceiling(object["linf"]*lmax), reflen=NULL, ...) 
   standardGeneric("invALK"))
 
-setGeneric('leslie', function(object, fec, ...) standardGeneric('leslie'))
-
+#' Natural Mortality M1
+#'
+#' @description
+#' Generic function for M1 natural mortality estimation
+#'
+#' @param object An object to analyze
+#' @param ... Additional arguments
+#'
+#' @export
 setGeneric("m1", function(object, ...)
   standardGeneric("m1"))
+
+#' Natural Mortality M2
+#'
+#' @description
+#' Generic function for M2 natural mortality (predation mortality) estimation
+#'
+#' @param object An object to analyze
+#' @param ... Additional arguments
+#'
+#' @export
 setGeneric("m2", function(object, ...)
   standardGeneric("m2"))
+
+#' Forage Index
+#'
+#' @description
+#' Generic function for forage fish index calculation
+#'
+#' @param object An object to analyze
+#' @param ... Additional arguments
+#'
+#' @export
 setGeneric("forage", function(object, ...)
   standardGeneric("forage"))
+
+#' Predator Need
+#'
+#' @description
+#' Generic function for predator need calculation
+#'
+#' @param object An object to analyze
+#' @param ... Additional arguments
+#'
+#' @export
 setGeneric("predNeed", function(object, ...)
   standardGeneric("predNeed"))
 
@@ -576,6 +657,30 @@ setGeneric("priors", function(object, ...) {
 #'   priors(eql)
 #' }
 
-setGeneric("leslie", function(object, ...) standardGeneric("leslie"))
+#' Leslie Matrix Analysis
+#'
+#' @description
+#' Generic function for Leslie matrix analysis
+#'
+#' @param object An object (typically an FLStock or FLBRP)
+#' @param fec Fecundity parameters
+#' @param ... Additional arguments
+#'
+#' @export
+setGeneric('leslie', function(object, fec, ...) standardGeneric('leslie'))
+
+#' Plot Length Frequency Data
+#'
+#' @param x An object to plot
+#' @param ... Additional arguments
+#'
+#' @export
 setGeneric('plotLengths', function(x, ...) standardGeneric('plotLengths')) 
+
+#' Stock Status Curve
+#'
+#' @param object An object to plot
+#' @param ... Additional arguments
+#'
+#' @export
 setGeneric("curveSS", function(object,...) standardGeneric("curveSS"))

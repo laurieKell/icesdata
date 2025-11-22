@@ -1,35 +1,5 @@
-#' Extract Time Series Statistics from FLStock Objects
-#'
-#' @description
-#' Creates a data frame of time series statistics from FLStock objects, including
-#' catch, ebiomass, SSB, fishing mortality, harvest rate, and mean natural mortality.
-#'
-#' @param object An object of class FLStock or FLStocks
-#' @param ... Additional arguments (not currently used)
-#'
-#' @return A data frame containing time series of:
-#'   \itemize{
-#'     \item catch - Catch values
-#'     \item eb - Exploitable biomass
-#'     \item ssb - Spawning stock biomass
-#'     \item f - Fishing mortality (Fbar)
-#'     \item h - Harvest rate (catch/ebiomass)
-#'     \item m - Mean natural mortality
-#'   }
-#'
-#' @examples
-#' \dontrun{
-#' # For single stock
-#' data(ple4)
-#' ts1 <- tseries(ple4)
-#'
-#' # For multiple stocks
-#' stocks <- FLStocks(stock1=ple4, stock2=ple4)
-#' ts2 <- tseries(stocks)
-#' }
-#'
-#' @export
-setGeneric("tseries", function(object, ...) standardGeneric("tseries"))
+# Note: Generic for tseries is defined in generic.R
+# This file contains only method definitions
 
 #' @rdname tseries
 #' @export
@@ -132,48 +102,8 @@ setMethod("tseries", signature(object="FLBRP"), function(object){
 setMethod("tseries", signature(object="FLBRPs"), function(object){
   plyr::ldply(object, function(x) model.frame(tseries(x)), .id=NULL)})
 
-#'
-#' @export
-setGeneric("ebiomass", function(object) standardGeneric("ebiomass"))
-
-#' @rdname ebiomass
-#' @export
-setMethod("ebiomass", signature(object="FLStock"),
-          function(object) {
-            sel   <- harvest(object)
-            wt    <- catch.wt(object) %*% sel %/% fapex(sel)
-            eb.wt <- qmax(wt, 0.000001)
-            
-            apply(eb.wt %*% stock.n(object), 2:6, sum)
-          })
-
-
-#' Standardize Values
-#'
-#' @description
-#' Standardizes values by subtracting the mean and dividing by the standard deviation.
-#'
-#' @param x A numeric vector, matrix, array or FLQuant
-#' @param na.rm Logical indicating whether to remove NA values when computing statistics
-#'
-#' @return An object of the same class as the input with standardized values
-#'
-#' @details
-#' Standardization follows the formula: (x - mean(x))/sd(x)
-#'
-#' @examples
-#' \dontrun{
-#' # For numeric vector
-#' x <- 1:10
-#' stdz(object)
-#'
-#' # For FLQuant
-#' data(ple4)
-#' standardized_catch <- stdz(catch(ple4))
-#' }
-#'
-#' @export
-setGeneric("stdz", function(object, na.rm=TRUE, ...) standardGeneric("stdz"))
+# Note: Generics for ebiomass and stdz are defined in generic.R
+# This file contains only method definitions for tseries
 
 #' Calculate Exploitable Biomass
 #'

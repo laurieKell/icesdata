@@ -48,23 +48,46 @@ updateRefs <- function(x) {
 #' # In a vignette
 #' load_ices_data("icesdata.RData")
 #' }
-load_ices_data <- function(filename) {
-  # Try package data directory first
-  data_dir <- system.file("data", package = "icesdata")
-  data_file <- file.path(data_dir, filename)
-  
-  if (file.exists(data_file)) {
-    load(data_file, envir = .GlobalEnv)
-    return(TRUE)
+load_ices_data <- function(filename, subdir = NULL) {
+  # Try package data directory with subdirectories
+  if (is.null(subdir)) {
+    # Try common locations
+    data_locations <- c(
+      "data/stocks",
+      "data/metadata",
+      "data"
+    )
+  } else {
+    data_locations <- c(
+      paste("data", subdir, sep = "/"),
+      "data"
+    )
   }
   
-  # Try vignette data directory
-  vignette_data_dir <- system.file("vignettes/data", package = "icesdata")
-  data_file <- file.path(vignette_data_dir, filename)
+  for (loc in data_locations) {
+    data_dir <- system.file(loc, package = "icesdata")
+    data_file <- file.path(data_dir, filename)
+    
+    if (file.exists(data_file)) {
+      load(data_file, envir = .GlobalEnv)
+      return(TRUE)
+    }
+  }
   
-  if (file.exists(data_file)) {
-    load(data_file, envir = .GlobalEnv)
-    return(TRUE)
+  # Try vignette data directory with subdirectories
+  vignette_subdirs <- c("analysis", "reference-points", "derived", "")
+  for (subdir in vignette_subdirs) {
+    if (subdir == "") {
+      vignette_data_dir <- system.file("vignettes/data", package = "icesdata")
+    } else {
+      vignette_data_dir <- system.file(paste("vignettes/data", subdir, sep = "/"), package = "icesdata")
+    }
+    data_file <- file.path(vignette_data_dir, filename)
+    
+    if (file.exists(data_file)) {
+      load(data_file, envir = .GlobalEnv)
+      return(TRUE)
+    }
   }
   
   # Try local data directory (for development)
@@ -119,9 +142,14 @@ check_flr_packages <- function() {
 #'   load(file.path(data_dir, "data.RData"))
 #' }
 #' }
-get_vignette_data_dir <- function() {
-  # Try vignette data directory first
-  vignette_data_dir <- system.file("vignettes/data", package = "icesdata")
+get_vignette_data_dir <- function(subdir = NULL) {
+  # Try vignette data directory with optional subdirectory
+  if (is.null(subdir)) {
+    vignette_data_dir <- system.file("vignettes/data", package = "icesdata")
+  } else {
+    vignette_data_dir <- system.file(paste("vignettes/data", subdir, sep = "/"), package = "icesdata")
+  }
+  
   if (dir.exists(vignette_data_dir)) {
     return(vignette_data_dir)
   }
