@@ -19,14 +19,7 @@
 #'   }
 #' @source ICES Working Group on Stock Assessment Methods
 #' @usage 
-#' # Standard R data() function (recommended)
 #' data(icesdata)
-#' 
-#' # Or load using helper function (also works with subfolder structure)
-#' load_ices_stocks()
-#' 
-#' # Or load directly from file path
-#' load(system.file("data/stocks/icesdata.RData", package = "icesdata"))
 #' @examples
 #' \dontrun{
 #' data(icesdata)
@@ -48,14 +41,7 @@
 #'   }
 #' @source ICES Working Group on Stock Assessment Methods
 #' @usage 
-#' # Standard R data() function (recommended)
 #' data(info)
-#' 
-#' # Or load using helper function (also works with subfolder structure)
-#' load_ices_metadata()
-#' 
-#' # Or load directly from file path
-#' load(system.file("data/metadata/info.RData", package = "icesdata"))
 #' @examples
 #' \dontrun{
 #' data(info)
@@ -76,18 +62,34 @@
 #'   }
 #' @source ICES Working Group on Stock Assessment Methods
 #' @usage 
-#' # Standard R data() function (recommended)
 #' data(spp)
-#' 
-#' # Or load using helper function (also works with subfolder structure)
-#' load_ices_metadata()
-#' 
-#' # Or load directly from file path
-#' load(system.file("data/metadata/spp.RData", package = "icesdata"))
 #' @examples
 #' \dontrun{
 #' data(spp)
 #' head(spp)
 #' }
 "spp"
+
+#' ICES Length-Weight Relationships
+#'
+#' Length-weight relationship parameters for ICES fish species.
+#' Parameters a and b in the equation W = a * L^b where W is weight and L is length.
+#'
+#' @format A data frame with species length-weight relationships:
+#'   \itemize{
+#'     \item name - Common name of species
+#'     \item latin - Latin/scientific name
+#'     \item a - Length-weight parameter a
+#'     \item b - Length-weight parameter b
+#'     \item Source - Data source (e.g., "FishBase", "ResearchGate")
+#'   }
+#' @source Various sources including FishBase and ResearchGate
+#' @usage 
+#' data(lw)
+#' @examples
+#' \dontrun{
+#' data(lw)
+#' head(lw)
+#' }
+"lw"
 
