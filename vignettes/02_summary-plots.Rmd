@@ -1,0 +1,354 @@
+---
+title: "ICES Stocks - Summary Plots"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - Summary Plots}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/summary-plots-",
+  fig.path = "figures/summary-plots-",
+  fig.width = 10,
+  fig.height = 12,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+# Load icesdata package
+library(icesdata)
+
+# Load FLR ecosystem packages
+library(FLCore)
+library(FLBRP)
+library(FLife)
+
+# Load data manipulation packages
+library(plyr)
+library(reshape2)
+
+# Load visualization packages
+library(ggplot2)
+library(scales)
+
+# Set default theme for all plots
+theme_set(theme_ices(base_size = 12))
+
+# Load additional packages if available
+if (requireNamespace("FLAssess", quietly = TRUE)) {
+  library(FLAssess)
+}
+
+if (requireNamespace("ggplotFL", quietly = TRUE)) {
+  library(ggplotFL)
+}
+
+if (requireNamespace("FLCandy", quietly = TRUE)) {
+  library(FLCandy)
+}
+
+if (requireNamespace("FLSRTMB", quietly = TRUE)) {
+  library(FLSRTMB)
+}
+
+if (requireNamespace("statcomp", quietly = TRUE)) {
+  library(statcomp)
+}
+
+if (requireNamespace("DescTools", quietly = TRUE)) {
+  library(DescTools)
+}
+```
+
+## Introduction
+
+ICES Category 1 stock assessments, analytical age based assessments that have been benchmarked.
+
+This vignette demonstrates the calculation of derived quantities from ICES stock assessments including process error, SPR0, stock-recruitment relationships, and reference points.
+
+**Note:** This vignette requires external data files and FLCandy functions. Some sections may not run without additional setup.
+
+```{r, source, eval=FALSE}
+# External source files - these need to be available for full functionality
+# source("C:/active/jabba-z/source/jabba-utils.R")
+# source("C:/active/FLCandy/R/spr0Yr.R")
+# source('C:/active/FLCandy/R/nonStationarity.R')
+```
+
+```{r, data-load}
+# Load ICES data using standard data() function
+data(icesdata)
+data(info)
+data(spp)
+data(lw)
+
+# Set up vignette data directory for saving outputs
+vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
+if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
+  vignetteDataDir = file.path("data", "vignette-outputs")
+  if (!dir.exists(vignetteDataDir)) {
+    dir.create(vignetteDataDir, recursive = TRUE)
+  }
+}
+```
+
+### Summaries
+
+Biological assumptions and variation by age, and year
+
+```{r, summaries}
+vary = plyr::ldply(ICESStocks, function(x) data.frame(
+  m.age   = !all(FLCore::m(x)[1,] == apply(FLCore::m(x), 2, mean)),
+  m.yr    = !all(apply(FLCore::m(x), 2, mean) == mean(FLCore::m(x)[,1])),
+  mass.yr = !all(apply(stock.wt(x), 2, mean) == mean(stock.wt(x)[,1])),
+  mat.yr  = !all(apply(mat(x), 2, mean) == mean(mat(x)[,1]))))
+
+vary = transform(vary,
+  m.by.age  = ifelse(m.age, "M varys by Age", "M constant by Age"),
+  m.by.yr   = ifelse(m.yr, "M varys by Year", "M constant by Year"),
+  mat.by.yr = ifelse(mat.yr, "Mat varys by Year", "Mat constant by Year"),
+  mass.by.yr = ifelse(mass.yr, "Mass varys by Year", "Mass constant by Year"))
+
+save(vary, file = file.path(vignetteDataDir, "vary.RData"))
+```
+
+### Equilibrium analysis
+
+Take the average values at-age across all years for each stock, and fit a Beverton and Holt stock recruitment relationship using steepness from `FishBase`.
+
+```{r, eq}
+eq = plyr::mlply(names(ICESStocks), function(.id) {
+  rtn = try(FLCandy::eqlFn(ICESStocks[[.id]]))
+  if ("try-error" %in% class(rtn)) return(NULL)
+  return(rtn)
+})
+
+names(eq) = names(ICESStocks)
+
+save(eq, file = file.path(vignetteDataDir, "eq.RData"))
+```
+
+### Process error
+
+Process error represents the inherent variability in population dynamics that is not accounted for by the model structure. It differs from sampling error, which arises from the data collection process. However, it can be difficult to consistently identify the correct process error structure. Incorrectly attributing process error to the wrong model component (e.g. natural mortality vs selectivity) can lead to biased estimates and management advice.
+
+```{r, pe}
+Fn = function(stk, eq, stock = FLCore::ssb) {
+  (stock(stk) - 
+   window(stock(stk)[,-1], end = dims(stk)$maxyear + 1) -
+   catch(stk) + sp(stk, eq, stock)) / stock(stk)
+}
+
+pe = plyr::mdply(names(ICESStocks), function(.id) {
+  rtn = try(Fn(ICESStocks[[.id]], eq[[.id]]))
+  if ("try-error" %in% class(rtn)) return(NULL)
+  cbind(.id = .id, as.data.frame(rtn, drop = TRUE))
+})[,-1]
+
+ggplot(pe) +
+  geom_line(aes(year, data), col = "blue") +
+  geom_text(aes(x = 1950, y = V1, label = .id), 
+            data = plyr::ddply(pe, .(.id), with, 
+                               data.frame(V1 = median(data, na.rm = TRUE))),
+            hjust = 0, vjust = 1, size = 3, color = "black") +
+  facet_wrap(~.id, scale = "free_y", ncol = 4) +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(title = "Process Error",
+       x = "Year",
+       y = "")
+
+save(pe, file = file.path(vignetteDataDir, "pe.RData"))
+```
+
+**Figure `r iFig <- iFig + 1; iFig`** Process error
+
+#### $SPR_{0}$ time series
+
+```{r, spr0}
+spr0Par = plyr::llply(ICESStocks, function(x) {
+  res = FLCandy::spr0Yr(x)
+  FLCore::FLPar(array(c(res), dim = c(1, dim(res)[2]),
+                      dimnames = list(params = "spr0", iter = seq(dim(res)[2]))))
+})
+
+spr0 = plyr::ldply(ICESStocks, function(x) {
+  transform(as.data.frame(FLCandy::spr0Yr(x)), year = year, spr0 = data)
+})
+
+ggplot(spr0) +
+  geom_line(aes(year, spr0), col = "blue") +
+  geom_text(aes(x = 1950, y = V1, label = .id),
+            data = plyr::ddply(spr0, .(.id), with,
+                               data.frame(V1 = median(spr0, na.rm = TRUE))),
+            hjust = 0, vjust = 1, size = 3, color = "black") +
+  facet_wrap(~.id, scale = "free_y", ncol = 4) +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(title = "SPR0",
+       x = "Year",
+       y = "")
+
+save(spr0, spr0Par, file = file.path(vignetteDataDir, "spr0.RData"))
+```
+
+#### SRR
+
+```{r, sr, eval=FALSE}
+# Stock-recruitment relationships require FLCandy functions
+# This section is disabled as it requires external dependencies
+# if (exists("ICESStocks") && requireNamespace("FLCandy", quietly = TRUE) && 
+#     requireNamespace("FLSRTMB", quietly = TRUE)) {
+#   sr <- FLSRs(lapply(ICESStocks, function(x) {
+#     srr <- as.FLSR(x, model = bevholtSV)
+#     res <- FLCandy::ftmb(srr, s.est = TRUE, s = x@fishlife["s"],
+#                          s.logitsd = x@fishlife["sd.logit.s"],
+#                          spr0 = FLCandy::spr0Yr(x))
+#     res
+#   }))
+#   names(sr) <- names(ICESStocks)
+# }
+```
+
+```{r, virgin}
+virgin = plyr::mdply(names(ICESStocks), function(.id) {
+  cbind(.id = .id, model.frame(srPar[[.id]]),
+        year = unlist(dimnames(FLCandy::spr0Yr(ICESStocks[[.id]]))$year))
+})[,-c(1,6)]
+virgin$year = as.numeric(virgin$year)
+
+ggplot(virgin) +
+  geom_line(aes(year, v), col = "blue") +
+  geom_text(aes(x = 1950, y = V1, label = .id),
+            data = plyr::ddply(virgin, .(.id), with,
+                               data.frame(V1 = median(v, na.rm = TRUE))),
+            hjust = 0, vjust = 1, size = 3, color = "black") +
+  facet_wrap(~.id, scale = "free_y", ncol = 4) +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(title = "Virgin Biomass",
+       x = "Year",
+       y = "")
+
+save(virgin, file = file.path(vignetteDataDir, "virgin.RData"))
+```
+
+### Reference Points
+
+```{r, msy-data}
+rf = plyr::mdply(names(ICESStocks), function(.id) {
+  rf = cbind(.id = .id, FLCandy::nonStationarity(ICESStocks[[.id]], sr = sr[[.id]]))
+  if ("try-error" %in% class(rf)) return(NULL)
+  rf
+})
+
+rf = reshape2::dcast(rf, .id + year + refpt ~ quant, value.var = "data")
+
+save(rf, file = file.path(vignetteDataDir, "rf.RData"))
+```
+
+```{r, bmsy}
+ggplot(subset(rf, refpt == "msy")) +
+  geom_line(aes(year, ssb), col = "blue") +
+  geom_text(aes(x = 1950, y = V1, label = .id),
+            data = plyr::ddply(rf, .(.id), with,
+                               data.frame(V1 = median(ssb, na.rm = TRUE))),
+            hjust = 0, vjust = 1, size = 3, color = "black") +
+  facet_wrap(~.id, scale = "free_y", ncol = 4) +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(title = "BMSY",
+       x = "Year",
+       y = "")
+```
+
+```{r, msy}
+ggplot(subset(rf, refpt == "msy")) +
+  geom_line(aes(year, yield), col = "blue") +
+  geom_text(aes(x = 1950, y = V1, label = .id),
+            data = plyr::ddply(rf, .(.id), with,
+                               data.frame(V1 = median(yield, na.rm = TRUE))),
+            hjust = 0, vjust = 1, size = 3, color = "black") +
+  facet_wrap(~.id, scale = "free_y", ncol = 4) +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(title = "MSY",
+       x = "Year",
+       y = "")
+```
+
+```{r, fmsy}
+ggplot(subset(rf, refpt == "msy")) +
+  geom_line(aes(year, harvest), col = "blue") +
+  geom_text(aes(x = 1950, y = V1, label = .id),
+            data = plyr::ddply(rf, .(.id), with,
+                               data.frame(V1 = median(harvest, na.rm = TRUE))),
+            hjust = 0, vjust = 1, size = 3, color = "black") +
+  facet_wrap(~.id, scale = "free_y", ncol = 4) +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(title = "FMSY",
+       x = "Year",
+       y = "")
+```
+
+```{r, abi}
+abi = plyr::mdply(names(ICESStocks), function(id) {
+  rtn = cbind(.id = id, as.data.frame(FLCandy::abi(ICESStocks[[id]], eq[[id]]), drop = TRUE))
+  if ("try-error" %in% class(rtn)) return(NULL)
+  rtn
+})
+
+names(abi)[4] = "abi"
+  
+  # Save if data directory available
+  save(abi, file = file.path(vignetteDataDir, "abi.RData"))
+  }
+  
+  abi2 <- plyr::ddply(abi, .(.id), transform, data = abi / mean(abi))
+  
+  ggplot(abi2) +
+    geom_line(aes(year, abi), col = "blue") +
+    geom_text(aes(x = 1950, y = V1, label = .id),
+              data = plyr::ddply(abi2, .(.id), with,
+                                 data.frame(V1 = median(abi, na.rm = TRUE))),
+              hjust = 0, vjust = 1, size = 3, color = "black") +
+    facet_wrap(~.id, scale = "free_y", ncol = 4) +
+    theme(legend.position = "none",
+          strip.text = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()) +
+    labs(title = "ABIMSY",
+         x = "Year",
+         y = "")
+
+save(abi, file = file.path(vignetteDataDir, "abi.RData"))
+```
+

@@ -36,20 +36,18 @@ library(icesdata)
 
 # Load FLR ecosystem packages
 library(FLCore)
-library(FLasher)
 library(FLBRP)
 library(FLife)
 
 # Load data manipulation packages
 library(plyr)
-library(dplyr)
-library(tidyr)
-library(reshape2)
 
 # Load visualization packages
 library(ggplot2)
 library(scales)
-library(ggpubr)
+
+# Set default theme for all plots
+theme_set(theme_ices(base_size = 12))
 
 # Load additional packages if available
 if (requireNamespace("FLAssess", quietly = TRUE)) {
@@ -91,79 +89,18 @@ ICES Category 1 stock assessments, analytical age based assessments that have be
 ```
 
 ```{r, data-load}
-# Load ICES data using package-relative paths
-# Helper function from icesdata package
-formas_data_dir <- get_vignette_data_dir()
+# Load ICES data using standard data() function
+data(icesdata)
+data(info)
+data(spp)
+data(lw)
 
-# Try formas data directory
-if (is.null(formas_data_dir)) {
-  formas_data_dir <- system.file("formas/data", package = "icesdata")
-  if (!dir.exists(formas_data_dir)) {
-    if (dir.exists("formas/data")) {
-      formas_data_dir <- "formas/data"
-    } else {
-      formas_data_dir <- NULL
-    }
-  }
-}
-
-# Try package data directory
-data_dir <- system.file("data", package = "icesdata")
-
-# Try vignette data directory
-vignette_data_dir <- system.file("vignettes/data", package = "icesdata")
-
-# Load ICES stocks data
-if (!is.null(formas_data_dir)) {
-  inputs_dir <- file.path(formas_data_dir, "inputs")
-  
-  # Try multiple possible stock data file names
-  stock_files <- c(
-    "Updated_stks_n82_R0_updated202408.RData",
-    "Updated_stks_n81_R0_updated2023.RData",
-    "Updated_stks.RData"
-  )
-  
-  stocks_loaded <- FALSE
-  for (stock_file in stock_files) {
-    stocks_file <- file.path(inputs_dir, stock_file)
-    if (file.exists(stocks_file)) {
-      load(stocks_file, envir = .GlobalEnv)
-      # Rename ICESStocks to icesdata if needed
-      if (exists("ICESStocks") && !exists("icesdata")) {
-        icesdata <- ICESStocks
-      }
-      stocks_loaded <- TRUE
-      break
-    }
-  }
-  
-  if (!stocks_loaded && file.exists(file.path(data_dir, "icesdata.RData"))) {
-    load(file.path(data_dir, "icesdata.RData"), envir = .GlobalEnv)
-    stocks_loaded <- TRUE
-  }
-}
-
-# Load info data
-if (!is.null(formas_data_dir)) {
-  info_file <- file.path(formas_data_dir, "info.RData")
-  if (file.exists(info_file)) {
-    load(info_file, envir = .GlobalEnv)
-  } else {
-    # Try to read from CSV
-    db_file <- file.path(formas_data_dir, "inputs", "Database.csv")
-    if (file.exists(db_file)) {
-      info <- read.csv(db_file)[, -9]
-      names(info)[1] <- ".id"
-    }
-  }
-}
-
-# Load spp data
-if (!is.null(formas_data_dir)) {
-  spp_file <- file.path(formas_data_dir, "spp.RData")
-  if (file.exists(spp_file)) {
-    load(spp_file, envir = .GlobalEnv)
+# Set up vignette data directory for saving outputs
+vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
+if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
+  vignetteDataDir = file.path("data", "vignette-outputs")
+  if (!dir.exists(vignetteDataDir)) {
+    dir.create(vignetteDataDir, recursive = TRUE)
   }
 }
 ```
@@ -176,9 +113,8 @@ if (!is.null(formas_data_dir)) {
 + **`lw`** length weight relationships
 
 ```{r, spp-data}
-# Species metadata - create if not already loaded
-if (!exists("spp")) {
-  stock <- c("ank.27.78abd", "aru.27.5a14", "aru.27.5b6a", "bss.27.4bc7ad-h", "bss.27.8ab", 
+# Species metadata
+stock <- c("ank.27.78abd", "aru.27.5a14", "aru.27.5b6a", "bss.27.4bc7ad-h", "bss.27.8ab", 
           "cod.21.1", "cod.2127.1f14", "cod.27.1-2", "cod.27.1-2coastN", "cod.27.22-24", 
           "cod.27.24-32", "cod.27.47d20", "cod.27.5a", "cod.27.5b1", "cod.27.6a", 
           "cod.27.7a", "cod.27.7e-k", "had.27.1-2", "had.27.46a20", "had.27.5a", 
@@ -266,20 +202,18 @@ if (!exists("spp")) {
           "Micromesistius", "Merlangius", "Merlangius", "Merlangius", 
           "Merlangius", "Glyptocephalus")
   
-  spp <- data.frame(
-    stock = stock,
-    name = name,
-    spp = latin,
-    Genus = Genus,
-    Species = unlist(strsplit(latin, " "))[seq(2, length(latin) * 2, 2)]
-  )
-}
+spp <- data.frame(
+  stock = stock,
+  name = name,
+  spp = latin,
+  Genus = Genus,
+  Species = unlist(strsplit(latin, " "))[seq(2, length(latin) * 2, 2)]
+)
 ```
 
 ```{r, lw-data}
-# Length-weight relationships - create if not already loaded
-if (!exists("lw")) {
-  lw <- data.frame(
+# Length-weight relationships
+lw <- data.frame(
     name = c(
       "Anglerfish", "Atlantic redfishes", "European seabass", "Atlantic cod",
       "Haddock", "Atlantic herring", "European hake", "Atlantic horse mackerel", 
@@ -302,8 +236,7 @@ if (!exists("lw")) {
       "FishBase", "FishBase", "ResearchGate", "FishBase", "ScienceDirect", "ResearchGate", "ResearchGate",
       "ResearchGate", "FishBase", "FishBase", "FishBase", "FishBase", "ResearchGate", "ScienceDirect",
       "FishBase", "NAFO", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase")
-  )
-}
+)
 ```
 
 ### Summaries
@@ -311,26 +244,20 @@ if (!exists("lw")) {
 #### Catch data
 
 ```{r, catch-ices}
-if (exists("icesdata") && is(icesdata, "FLStocks")) {
-  ctc <- plyr::ldply(icesdata, function(x) as.data.frame(catch(x), drop = TRUE))
-  
-  # Use ICES theme
-  ggplot(plyr::ddply(ctc, .(.id), transform, catch = stdz(data))) +
-    geom_line(aes(year, catch), col = "blue") +
-    geom_text(aes(x = 1950, y = 2, label = .id), 
-              hjust = 0, vjust = 1, size = 3, color = "black") +
-    facet_wrap(~.id, scale = "free_y", ncol = 4) +
-    theme_ices(base_size = 16) +
-    theme(legend.position = "none", 
-          strip.text = element_blank(),
-          axis.text = element_blank(),
-          axis.ticks = element_blank()) +
-    labs(title = "Catch",
-         x = "Year",
-         y = "")
-} else {
-  warning("icesdata not found or not an FLStocks object")
-}
+ctc = plyr::ldply(icesdata, function(x) as.data.frame(catch(x), drop = TRUE))
+
+ggplot(plyr::ddply(ctc, .(.id), transform, catch = stdz(data))) +
+  geom_line(aes(year, catch), col = "blue") +
+  geom_text(aes(x = 1950, y = 2, label = .id), 
+            hjust = 0, vjust = 1, size = 3, color = "black") +
+  facet_wrap(~.id, scale = "free_y", ncol = 4) +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()) +
+  labs(title = "Catch",
+       x = "Year",
+       y = "")
 ```
 
 **Figure `r iFig <- iFig + 1; iFig`** ICES catches, these are those estimated by the model if
@@ -353,33 +280,35 @@ a statistical catch-at-age method is used.
 
 ### Indices
 
-```{r, indices}
-if (!is.null(formas_data_dir)) {
-  idx_file <- file.path(formas_data_dir, "inputs", "Stock_indices.csv")
-  if (file.exists(idx_file)) {
-    idx <- read.csv(idx_file)[, 1:5]
-    names(idx) <- c(".id", "survey", "year", "data", "ages")
-    idx$data <- as.numeric(idx$data)
-    
-    smry <- plyr::ddply(idx, .(.id, survey), with, data.frame(n = length(data)))
-    smry2 <- plyr::ddply(smry, .(.id), with, data.frame(n = length(survey)))
-    
-    # Use ICES theme
-    ggplot(plyr::ddply(idx, .(survey, .id), transform, index = stdz(data, na.rm = TRUE))) +
-      geom_line(aes(year, index, col = survey)) +
-      geom_text(aes(x = 1950, y = 2, label = .id), 
-                hjust = 0, vjust = 1, size = 3, color = "black") +
-      facet_wrap(~.id, scale = "free_y", ncol = 4) +
-      theme_ices(base_size = 16) +
-      theme(legend.position = "none", 
-            strip.text = element_blank(),
-            axis.text = element_blank(),
-            axis.ticks = element_blank()) +
-      labs(title = "Indices",
-           x = "Year",
-           y = "")
-  }
-}
+```{r, indices, eval=FALSE}
+# Indices section requires external CSV file - disabled by default
+# Uncomment and provide path if Stock_indices.csv is available:
+#
+# idxFile = file.path("data", "raw", "inputs", "Stock_indices.csv")
+# if (file.exists(idxFile)) {
+#   idx = read.csv(idxFile)[, 1:5]
+#   names(idx) = c(".id", "survey", "year", "data", "ages")
+#   idx$data = as.numeric(idx$data)
+#   
+#   smry = plyr::ddply(idx, .(.id, survey), with, data.frame(n = length(data)))
+#   smry2 = plyr::ddply(smry, .(.id), with, data.frame(n = length(survey)))
+#   
+#   # Use ICES theme
+#   ggplot(plyr::ddply(idx, .(survey, .id), transform, index = stdz(data, na.rm = TRUE))) +
+#     geom_line(aes(year, index, col = survey)) +
+#     geom_text(aes(x = 1950, y = 2, label = .id), 
+#                hjust = 0, vjust = 1, size = 3, color = "black") +
+#      facet_wrap(~.id, scale = "free_y", ncol = 4) +
+#      theme_ices(base_size = 16) +
+#      theme(legend.position = "none", 
+#            strip.text = element_blank(),
+#            axis.text = element_blank(),
+#            axis.ticks = element_blank()) +
+#      labs(title = "Indices",
+#           x = "Year",
+#           y = "")
+# }
+# }
 ```
 
 **Figure `r iFig <- iFig + 1; iFig`** Indices of abundance.

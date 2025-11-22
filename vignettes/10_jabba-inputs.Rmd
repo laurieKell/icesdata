@@ -1,0 +1,94 @@
+---
+title: "ICES Stocks - JABBA Inputs"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - JABBA Inputs}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/jabba-inputs-",
+  fig.path = "figures/jabba-inputs-",
+  fig.width = 10,
+  fig.height = 12,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+library(icesdata)
+library(FLCore)
+library(FLBRP)
+library(FLife)
+library(plyr)
+library(ggplot2)
+library(scales)
+
+# Set default theme for all plots
+theme_set(theme_ices(base_size = 12))
+
+if (requireNamespace("FLCandy", quietly = TRUE)) {
+  library(FLCandy)
+}
+```
+
+## Introduction
+
+ICES Category 1 stock assessments, analytical age based assessments that have been benchmarked.
+
+This vignette demonstrates the preparation of inputs for JABBA stock assessment models.
+
+**Note:** This vignette requires external data files and JABBA utility functions.
+
+```{r, source, eval=FALSE}
+# External source files needed for JABBA inputs
+# source("C:/active/jabba-z/source/jabba-utils.R")
+```
+
+```{r, data-load}
+# Load ICES data using standard data() function
+data(icesdata)
+data(info)
+data(spp)
+data(lw)
+
+# Set up vignette data directory for saving outputs
+vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
+if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
+  vignetteDataDir = file.path("data", "vignette-outputs")
+  if (!dir.exists(vignetteDataDir)) {
+    dir.create(vignetteDataDir, recursive = TRUE)
+  }
+}
+```
+
+### Priors
+
+```{r, priors}
+priors = plyr::ldply(ICESStocks, priorFn)
+
+save(priors, file = file.path(vignetteDataDir, "priors.RData"))
+```
+
+#### Time series
+
+```{r, tseries}
+tseries = plyr::ldply(ICESStocks, dataFn)
+
+save(tseries, file = file.path(vignetteDataDir, "tseries.RData"))
+```
+

@@ -1,0 +1,246 @@
+---
+title: "ICES Stocks - Natural Mortality"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - Natural Mortality}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/natural-mortality-",
+  fig.path = "figures/natural-mortality-",
+  fig.width = 10,
+  fig.height = 12,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+library(icesdata)
+library(FLCore)
+library(FLBRP)
+library(FLife)
+library(plyr)
+library(reshape2)
+library(ggplot2)
+library(scales)
+
+# Set default theme for all plots
+theme_set(theme_ices(base_size = 12))
+
+if (requireNamespace("FLCandy", quietly = TRUE)) {
+  library(FLCandy)
+}
+if (requireNamespace("FLAssess", quietly = TRUE)) {
+  library(FLAssess)
+}
+```
+
+## Introduction
+
+ICES Category 1 stock assessments, analytical age based assessments that have been benchmarked.
+
+This vignette demonstrates the estimation of natural mortality (M) for ICES stocks using various approaches including size-based relationships.
+
+Natural mortality (M) has been shown to be a function of size-at-age [@lorenzen2022size], i.e. $M=aW^b$, where $b$ ~ -0.3. Choose $a$ so that M at age-at-maturity ($A_{50}$) is the same as in the ICES assessment. M-at-age can then be re-estimated based on the stock weights-at-age which have varied over time.
+
+```{r, source, eval=FALSE}
+# External source files
+# source("C:/active/jabba-z/source/jabba-utils.R")
+```
+
+```{r, data-load}
+# Load ICES data using standard data() function
+data(icesdata)
+data(info)
+data(spp)
+data(lw)
+
+# Set up vignette data directory for saving outputs
+vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
+if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
+  vignetteDataDir = file.path("data", "vignette-outputs")
+  if (!dir.exists(vignetteDataDir)) {
+    dir.create(vignetteDataDir, recursive = TRUE)
+  }
+}
+```
+
+### Natural mortality
+
+SMS estimates for the North Sea
+
+```{r, m-sms, eval=FALSE}
+# North Sea SMS outputs
+# This requires SMS output CSV files
+# sms <- read.csv(file.path(inputs_dir, "Assessed_species_details_by_age_and_quarter.csv"))
+# Process SMS data to create FLStock objects
+```
+
+Natural mortality (M) has been shown to be a function of size-at-age [@lorenzen2022size], i.e. $M=aW^b$, where $b$ ~ -0.3. Choose $a$ so that M at age-at-maturity ($A_{50}$) is the same as in the ICES assessment.
+
+```{r, k-lorenzen, echo=TRUE}
+m = plyr::mlply(names(ICESStocks), function(.id) {
+  print(.id)
+  try({
+    m  = plyr::aaply(FLCore::m(ICESStocks[[.id]]), 1, mean)
+    wt = plyr::aaply(stock.wt(ICESStocks[[.id]]), 1, mean)
+    mat = plyr::aaply(mat(ICESStocks[[.id]]), 1, mean)
+    age = as.numeric(names(m))
+    a50 = predict(loess(age ~ mat), newdata = 0.5)
+    m50 = predict(loess(m ~ age), newdata = a50)
+    w50 = predict(loess(wt ~ age), newdata = a50)
+    
+    a = m50 / (w50^-0.3)
+    a * stock.wt(ICESStocks[[.id]])^-0.3
+  })
+})
+
+save(m, file = file.path(vignetteDataDir, "mLorenzen.RData"))
+```
+
+```{r, m-vpa}
+.id = 6
+stk = ICESStocks[[.id]]
+m(stk) = m[[.id]]
+
+library(FLAssess)
+plot(FLStocks("ICES" = ICESStocks[[.id]][-1],
+              "VPA" = (stk + VPA(stk))[-1]))
+```
+
+### Priors
+
+```{r, priors}
+priors = plyr::ldply(ICESStocks, priorFn)
+```
+
+#### Time series
+
+```{r, tseries}
+tseries = plyr::ldply(ICESStocks, dataFn)
+```
+
+### Equilibrium analysis
+
+Take the average across all years for each stock, and fit a Beverton and Holt stock recruitment relationship
+
+```{r, eq}
+eq = FLBRPs(plyr::llply(ICESStocks, eqlFn))
+
+save(eq, file = file.path(vignetteDataDir, "eq.RData"))
+```
+
+#### Process error
+
+```{r, pe}
+peFn = function(stk, eq, stock = FLCore::ssb) {
+  (stock(stk) - 
+   window(stock(stk)[,-1], end = dims(stk)$maxyear + 1) -
+   catch(stk) + sp(stk, eq, stock)) / stock(stk)
+}
+
+pe = plyr::mdply(names(ICESStocks), function(.id) {
+  print(.id)
+  rtn = try(peFn(ICESStocks[[.id]], eq[[.id]]))
+  if ("try-error" %in% class(rtn)) return(NULL)
+  cbind(.id = .id, as.data.frame(rtn, drop = TRUE))
+})[,-1]
+
+save(pe, file = file.path(vignetteDataDir, "pe.RData"))
+
+ggplot(pe) +
+  geom_line(aes(year, data), col = "blue") +
+  facet_wrap(~.id, scale = "free_y", ncol = 4) +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(title = "Process Error",
+       x = "Year",
+       y = "")
+```
+
+#### $SPR_{0}$ time series
+
+```{r, spr0}
+spr0Par = plyr::llply(ICESStocks, function(x) {
+  res = spr0Yr(x)
+  FLCore::FLPar(array(c(res), dim = c(1, dim(res)[2]),
+                       dimnames = list(params = "spr0", iter = seq(dim(res)[2]))))
+})
+
+spr0 = plyr::ldply(ICESStocks, function(x) {
+  as.data.frame(spr0Yr(x), drop = TRUE)
+})
+
+ggplot(spr0) +
+  geom_line(aes(year, data), col = "blue") +
+  facet_wrap(~.id, scale = "free_y", ncol = 4) +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(title = "SPR0",
+       x = "Year",
+       y = "")
+
+save(spr0, file = file.path(vignetteDataDir, "spr0.RData"))
+```
+
+#### SRR
+
+```{r, sr}
+library(FLSRTMB)
+sr = FLSRs(lapply(ICESStocks, function(x) {
+  srr = as.FLSR(x, model = bevholtSV)
+  res = ftmb(srr, s.est = TRUE, s = x@fishlife["s"],
+             s.logitsd = x@fishlife["sd.logit.s"],
+             spr0 = spr0Yr(x))
+  res
+}))
+names(sr) = names(ICESStocks)
+
+save(sr, file = file.path(vignetteDataDir, "sr.RData"))
+```
+
+#### Reference Points
+
+```{r, msy-data}
+rf = plyr::mdply(names(ICESStocks), function(.id) {
+  rf = cbind(.id = .id, nonStationarity(ICESStocks[[.id]], sr = sr[[.id]]))
+  rf
+})
+
+rf = reshape2::dcast(rf, .id + year + refpt ~ quant, value.var = "data")
+
+save(rf, file = file.path(vignetteDataDir, "rf.RData"))
+```
+
+## $SPR_{0}$ Entropy
+
+```{r, spr0-entropy, fig.height=2.25, eval=FALSE}
+# Requires additional packages and data
+# if (exists("spr0") && requireNamespace("statcomp", quietly = TRUE)) {
+#   entropy <- plyr::ddply(spr0, .(.id, wg, species.group), with,
+#     data.frame("SPR0" = permutation_entropy(
+#       ordinal_pattern_distribution(x = data, ndemb = 5))))
+# }
+```
+
+**Figure `r iFig <- iFig + 1; iFig`** Examples of high and low entropy stocks
+

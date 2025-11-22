@@ -32,15 +32,14 @@ iTab <- 0
 ```{r, libraries}
 library(icesdata)
 library(FLCore)
-library(FLasher)
 library(FLBRP)
 library(FLife)
 library(plyr)
-library(dplyr)
-library(reshape2)
 library(ggplot2)
 library(scales)
-library(ggpubr)
+
+# Set default theme for all plots
+theme_set(theme_ices(base_size = 12))
 
 if (requireNamespace("FLCandy", quietly = TRUE)) {
   library(FLCandy)
@@ -59,28 +58,18 @@ This vignette demonstrates the construction of operating models for ICES stocks.
 **Note:** This vignette requires external data files and FLCandy functions.
 
 ```{r, data-load}
-formas_data_dir <- get_vignette_data_dir()
-if (is.null(formas_data_dir)) {
-  formas_data_dir <- system.file("formas/data", package = "icesdata")
-  if (!dir.exists(formas_data_dir) && dir.exists("formas/data")) {
-    formas_data_dir <- "formas/data"
-  }
-}
+# Load ICES data using standard data() function
+data(icesdata)
+data(info)
+data(spp)
+data(lw)
 
-# Load data files similar to 03_summary-plots.Rmd
-if (!is.null(formas_data_dir)) {
-  inputs_dir <- file.path(formas_data_dir, "inputs")
-  stock_files <- c(
-    "Updated_stks_n82_R0_updated202408.RData",
-    "Updated_stks_n81_R0_updated2023.RData"
-  )
-  
-  for (stock_file in stock_files) {
-    stocks_file <- file.path(inputs_dir, stock_file)
-    if (file.exists(stocks_file)) {
-      load(stocks_file, envir = .GlobalEnv)
-      break
-    }
+# Set up vignette data directory for saving outputs
+vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
+if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
+  vignetteDataDir = file.path("data", "vignette-outputs")
+  if (!dir.exists(vignetteDataDir)) {
+    dir.create(vignetteDataDir, recursive = TRUE)
   }
 }
 ```

@@ -33,15 +33,13 @@ iTab <- 0
 library(icesdata)
 library(FLCore)
 library(FLBRP)
-library(FLFishery)
-library(FLasher)
 library(FLife)
 library(plyr)
-library(dplyr)
-library(reshape2)
 library(ggplot2)
-library(ggpubr)
 library(scales)
+
+# Set default theme for all plots
+theme_set(theme_ices(base_size = 12))
 
 if (requireNamespace("GGally", quietly = TRUE)) {
   library(GGally)
@@ -79,22 +77,23 @@ Understanding the structure of marine food webs and how they, as well as the ser
 ```
 
 ```{r, data-load}
-formas_data_dir <- get_vignette_data_dir()
-if (is.null(formas_data_dir)) {
-  formas_data_dir <- system.file("formas/data", package = "icesdata")
-  if (!dir.exists(formas_data_dir) && dir.exists("formas/data")) {
-    formas_data_dir <- "formas/data"
+# Load ICES data using standard data() function
+data(icesdata)
+data(info)
+data(spp)
+data(lw)
+
+# Set up vignette data directory for saving outputs
+vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
+if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
+  vignetteDataDir = file.path("data", "vignette-outputs")
+  if (!dir.exists(vignetteDataDir)) {
+    dir.create(vignetteDataDir, recursive = TRUE)
   }
 }
 
-# SS3 directory
-ss3_dir <- NULL
-if (!is.null(formas_data_dir)) {
-  ss3_dir <- file.path(formas_data_dir, "ss3")
-  if (!dir.exists(ss3_dir)) {
-    ss3_dir <- NULL
-  }
-}
+# SS3 directory - will fail if not present
+ss3Dir = file.path("data", "raw", "ss3")
 
 # Stock list
 stocks <- c("ank.27.78abd", "bss.27.4bc7ad-h", "bss.27.8ab",
@@ -105,15 +104,15 @@ stocks <- c("ank.27.78abd", "bss.27.4bc7ad-h", "bss.27.8ab",
 
 ```{r, ss3-data, eval=FALSE}
 # SS3 data loading - requires r4ss and ss3om packages
-# if (!is.null(ss3_dir) && requireNamespace("r4ss", quietly = TRUE) && 
+# if (!is.null(ss3Dir) && requireNamespace("r4ss", quietly = TRUE) && 
 #     requireNamespace("ss3om", quietly = TRUE)) {
 #   ss1 <- plyr::mlply(data.frame(.id = stocks), function(.id) {
-#     try(r4ss::SS_output(file.path(ss3_dir, .id), covar = FALSE))
+#     try(r4ss::SS_output(file.path(ss3Dir, .id), covar = FALSE))
 #   })
 #   names(ss1) <- stocks
 #   
 #   ss2 <- plyr::mlply(data.frame(.id = stocks), function(.id) {
-#     try(ss3om::readFLSss3(file.path(ss3_dir, .id)))
+#     try(ss3om::readFLSss3(file.path(ss3Dir, .id)))
 #   })
 #   names(ss2) <- stocks
 #   
@@ -122,7 +121,7 @@ stocks <- c("ank.27.78abd", "bss.27.4bc7ad-h", "bss.27.8ab",
 #   })
 #   
 #   sr <- plyr::mlply(data.frame(.id = stocks), function(.id) {
-#     try(ss3om::readFLSRss3(file.path(ss3_dir, .id)))
+#     try(ss3om::readFLSRss3(file.path(ss3Dir, .id)))
 #   })
 #   names(sr) <- stocks
 #   

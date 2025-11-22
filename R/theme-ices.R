@@ -21,6 +21,7 @@
 #' - Configurable grid lines and borders
 #' - Proper spacing and margins for time series plots
 #'
+#' @import ggplot2
 #' @export
 #'
 #' @examples
@@ -51,10 +52,7 @@ theme_ices <- function(base_size = 12,
                        panel_grid = TRUE,
                        panel_border = TRUE) {
   
-  # Check if ggplot2 is available
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("ggplot2 package is required for theme_ices(). Please install it with: install.packages('ggplot2')")
-  }
+  # ggplot2 is now in Imports, so it should be available
   
   # Start with theme_minimal
   half_line <- base_size / 2
@@ -311,40 +309,24 @@ ices_colors <- function(n = 5, type = "default") {
 #'   theme_ices()
 #' }
 scale_color_ices <- function(n = 10, type = "default", ...) {
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("ggplot2 package is required")
-  }
-  
   ggplot2::scale_color_manual(values = ices_colors(n = n, type = type), ...)
 }
 
 #' @rdname scale_color_ices
 #' @export
 scale_fill_ices <- function(n = 10, type = "default", ...) {
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("ggplot2 package is required")
-  }
-  
   ggplot2::scale_fill_manual(values = ices_colors(n = n, type = type), ...)
 }
 
 #' @rdname scale_color_ices
 #' @export
 scale_color_gradient_ices <- function(low = "#2166ac", high = "#d6604d", ...) {
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("ggplot2 package is required")
-  }
-  
   ggplot2::scale_color_gradient(low = low, high = high, ...)
 }
 
 #' @rdname scale_color_ices
 #' @export
 scale_fill_gradient_ices <- function(low = "#2166ac", high = "#d6604d", ...) {
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("ggplot2 package is required")
-  }
-  
   ggplot2::scale_fill_gradient(low = low, high = high, ...)
 }
 

@@ -33,6 +33,9 @@ iTab <- 0
 library(icesdata)
 library(ggplot2)
 library(scales)
+
+# Set default theme for all plots
+theme_set(theme_ices(base_size = 12))
 ```
 
 ## Introduction

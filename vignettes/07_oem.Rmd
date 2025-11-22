@@ -1,0 +1,265 @@
+---
+title: "ICES Stocks - OEM Analysis"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - OEM Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/oem-",
+  fig.path = "figures/oem-",
+  fig.width = 10,
+  fig.height = 12,
+  dev = "png"
+)
+
+iFig = 0
+iTab = 0
+```
+
+```{r, libraries}
+# Load icesdata package
+library(icesdata)
+
+# Load FLR ecosystem packages
+library(FLCore)
+library(FLBRP)
+library(FLife)
+library(FLCandy)
+
+# Load data manipulation packages
+library(plyr)
+
+# Load visualization packages
+library(ggplot2)
+library(scales)
+library(ggpubr)
+
+# Set default theme for all plots
+theme_set(theme_ices(base_size = 12))
+
+# Load additional packages if available
+if (requireNamespace("ggplotFL", quietly = TRUE)) {
+  library(ggplotFL)
+}
+if (requireNamespace("ggridges", quietly = TRUE)) {
+  library(ggridges)
+}
+if (requireNamespace("ggh4x", quietly = TRUE)) {
+  library(ggh4x)
+}
+if (requireNamespace("GGally", quietly = TRUE)) {
+  library(GGally)
+}
+if (requireNamespace("ggExtra", quietly = TRUE)) {
+  library(ggExtra)
+}
+if (requireNamespace("ggside", quietly = TRUE)) {
+  library(ggside)
+}
+if (requireNamespace("patchwork", quietly = TRUE)) {
+  library(patchwork)
+}
+if (requireNamespace("RColorBrewer", quietly = TRUE)) {
+  library(RColorBrewer)
+}
+if (requireNamespace("kableExtra", quietly = TRUE)) {
+  library(kableExtra)
+}
+if (requireNamespace("JABBA", quietly = TRUE)) {
+  library(JABBA)
+}
+if (requireNamespace("zoo", quietly = TRUE)) {
+  library(zoo)
+}
+if (requireNamespace("Metrics", quietly = TRUE)) {
+  library(Metrics)
+}
+if (requireNamespace("rpart", quietly = TRUE)) {
+  library(rpart)
+}
+if (requireNamespace("rpart.plot", quietly = TRUE)) {
+  library(rpart.plot)
+}
+if (requireNamespace("statcomp", quietly = TRUE)) {
+  library(statcomp)
+}
+```
+
+## Introduction
+
+ICES Category 1 stock assessments, analytical age based assessments that have been benchmarked.
+
+This vignette demonstrates the Hierarchical Assessments Framework (HAF) for comparing the precision and bias of catch-based assessments. It uses ICES Category 1 stocks as Operating Models (OM) with Beverton & Holt and Ricker stock-recruitment relationships, and compares reference points and priors used in Category 2 stock assessments.
+
+**Note:** This vignette requires FLCandy package and may require additional packages for full functionality.
+
+```{r, data-load}
+# Load ICES data using standard data() function
+data(icesdata)
+data(info)
+data(spp)
+data(lw)
+
+# Set up vignette data directory for saving outputs
+vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
+if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
+  vignetteDataDir = file.path("data", "vignette-outputs")
+  if (!dir.exists(vignetteDataDir)) {
+    dir.create(vignetteDataDir, recursive = TRUE)
+  }
+}
+```
+
+## Outline
+
+- Use ICES Category 1 stocks in the FLR stock database as an OM with Beverton & Holt and Ricker SRRs
+- Compare reference points and priors used in Category 2 stock assessments
+  - Run JABBA using priors for $r$ and $B_{MSY}/K$ based on EB from the Operating Model
+  - Stock specific with SD=0.01
+  - Stock specific with SD=0.30
+  - Stock specific Fox SD=0.30
+  - Generic SD=0.30
+  - Generic Fox SD=0.30
+- Compare to Length Based indicators
+
+### Length Samples
+
+Generate length samples from catch-at-age data using length-weight relationships and inverse age-length keys.
+
+```{r, lsmps}
+lsmps = plyr::mlply(names(icesdata), function(.id, meta = info, lwt = lw, fls = icesdata) {
+  try({
+    par = FLPar(a = mean(lw$a), b = mean(lw$b))
+    
+    if (info[meta[, ".id"] == .id, "Common.name"] %in% lwt[, "name"]) {
+      par = FLPar(lwt[meta[meta[, ".id"] == .id, "Common.name"] == lwt[, "name"], 
+                   c("a", "b")])
+    }
+    
+    cln = wt2len(catch.wt(fls[[.id]]) * 1000, par)
+    cln[is.na(cln)] = 0
+    iAlk = invALK(cln, bin = 0.5)
+    iAlk[is.na(iAlk)] = 0
+    catch.n(fls[[.id]])[is.na(catch.n(fls[[.id]]))] = 0
+    FLCandy:::lenSamp2(catch.n(fls[[.id]]), iAlk, n = 5000)
+  }, silent = TRUE)
+})
+names(lsmps) = names(icesdata)
+
+# Calculate length-based indicators
+lbi = plyr::mdply(data.frame(.id = names(lsmps)), function(.id) {
+  tryCatch(as.data.frame(1 / lmean(lsmps[[.id]]), drop = TRUE), 
+           error = function(e) NULL)
+})
+
+# Save length samples and indicators
+save(lsmps, file = file.path(vignetteDataDir, "lsmps.RData"))
+save(lbi, file = file.path(vignetteDataDir, "lbi.RData"))
+```
+
+### Length Indicators
+
+Calculate length-based indicators and compare with reference points from Beverton-Holt and Ricker SRRs.
+
+```{r, class-len}
+# Load equilibrium models (from 03_nonstationary-methods.Rmd)
+load(file.path(vignetteDataDir, "eq.RData"), envir = .GlobalEnv)
+load(file.path(vignetteDataDir, "lsmps.RData"), envir = .GlobalEnv)
+
+# Function to calculate length at 50% maturity
+calcLc = function(object) {
+  dat = subset(as.data.frame(object), data > 0)
+  dat = plyr::ddply(dat, .(len), with, cumsum(sum(data)) / sum(data))
+  dat$V1 = cumsum(dat$V1) / sum(dat$V1)
+  dat[(abs(dat$V1 - 0.5) == min(abs(dat$V1 - 0.5))), "len"][1]
+}
+
+# Calculate length indicators
+lind = plyr::mdply(data.frame(.id = names(icesdata)), function(.id) {
+  rtn = tryCatch(model.frame(FLQuants(
+    pmega = pmega(lsmps[[.id]], 
+                  linf = c(lhPar(fishlife(icesdata[[.id]])[c("linf", "k")]))),
+    lmean = lmean(lsmps[[.id]]),
+    l25 = l25(lsmps[[.id]])
+  ), drop = TRUE), error = function(e) NULL)
+  
+  if (is.null(rtn)) return(NULL)
+  
+  # Get kobe indicators from BH and Ricker models
+  bh = model.frame(FLCandy:::kobe(bh1[[.id]]), drop = TRUE)
+  rk = model.frame(FLCandy:::kobe(rk1[[.id]]), drop = TRUE)
+  
+  par = c(fishlife(icesdata[[.id]])[c("linf", "lm")])
+  tryCatch(cbind(rbind(
+    cbind(SRR = "Beverton & Holt", bh, rtn),
+    cbind(SRR = "Ricker", rk, rtn)
+  ), linf = par[1], l50 = par[2]), error = function(e) NULL)
+})
+
+# Calculate length at 50% maturity
+lf = plyr::mdply(data.frame(.id = names(icesdata)), function(.id) {
+  lcVal = tryCatch(calcLc(lsmps[[.id]]), error = function(e) NA)
+  lfmVal = tryCatch(c(FLCandy:::lfm(lcVal, fishlife(icesdata[[.id]])[c("linf")])), 
+                    error = function(e) NA)
+  data.frame(lc = lcVal, lfm = lfmVal)
+})
+
+lind = merge(lind, lf)
+
+# Calculate skill scores (requires FLSkill package)
+library(FLSkill)
+lind2 = plyr::ddply(lind, .(.id, SRR), with, 
+                    FLSkill:::skillScore(harvest, 1 / lmean))
+
+lind3 = plyr::ddply(lind, .(.id, SRR), with, {
+  data.frame(om = diff(zoo::rollmean(harvest[order(year)], 3)),
+             mp = diff(zoo::rollmean(1 / lmean[order(year)], 3)))
+})
+lind3 = plyr::ddply(lind3, .(.id, SRR), with, 
+                    FLSkill:::skillScore(exp(om), exp(mp)))
+
+# Save length indicators
+save(lind, lind2, lind3, file = file.path(vignetteDataDir, "lind.RData"))
+```
+
+### Length Sample Visualization
+
+Visualize length samples and fishing mortality for selected stocks.
+
+```{r, length-plot}
+load(file.path(vignetteDataDir, "lbi.RData"), envir = .GlobalEnv)
+
+i = min(33, length(lsmps))
+
+library(ggplotFL)
+p1 = plotLengths(lsmps[[i]]) +
+  geom_vline(aes(xintercept = data), col = "red",
+             data = as.data.frame(lmean(lsmps[[i]])))
+
+p2 = plot(fbar(icesdata[[i]])) + 
+  xlab("Year") + 
+  ylab("F")
+
+library(ggpubr)
+ggpubr::ggarrange(p1, p2, ncol = 1, heights = c(1, 0.5))
+```
+
+## Session Info
+
+```{r, session-info}
+sessionInfo()
+```

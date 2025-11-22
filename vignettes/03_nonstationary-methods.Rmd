@@ -43,14 +43,13 @@ library(FLRebuild)
 
 # Load data manipulation packages
 library(plyr)
-library(dplyr)
-library(tidyr)
-library(reshape2)
 
 # Load visualization packages
 library(ggplot2)
 library(scales)
-library(ggpubr)
+
+# Set default theme for all plots
+theme_set(theme_ices(base_size = 12))
 
 # Load parallel processing
   library(doParallel)
