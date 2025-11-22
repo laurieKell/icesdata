@@ -38,6 +38,7 @@ library(icesdata)
 library(FLCore)
 library(FLBRP)
 library(FLife)
+library(FLCandy)
 
 # Load data manipulation packages
 library(plyr)
@@ -50,58 +51,34 @@ library(ggplot2)
 library(scales)
 library(ggpubr)
 
-# Load parallel processing (if needed)
-if (requireNamespace("doParallel", quietly = TRUE) && 
-    requireNamespace("foreach", quietly = TRUE)) {
-  library(doParallel)
-  library(foreach)
-  library(parallel)
-  parallel_available <- TRUE
-} else {
-  parallel_available <- FALSE
-  message("doParallel and foreach not available - using sequential processing")
-}
+# Load parallel processing
+library(doParallel)
+library(foreach)
+library(parallel)
 ```
 
 ## Introduction
 
 ICES Category 1 stock assessments, analytical age based assessments that have been benchmarked.
 
+**Note:** This vignette requires FLCandy package from the **refactored** branch:
+```r
+devtools::install_github("lauriekell/FLCandy", ref = "refactored")
+```
+
 ```{r, data-load}
-# Load ICES data - using system.file for package-relative paths
-# First try to load from package data directory
-data_dir <- system.file("data", package = "icesdata")
+# Load ICES data using standard data() function
+data(icesdata)
+data(info)
+data(spp)
 
-# Alternative: load from vignette data directory
+# Set up vignette data directory for saving outputs
 vignette_data_dir <- system.file("vignettes/data", package = "icesdata")
-
-if (file.exists(file.path(data_dir, "icesdata.RData"))) {
-  load(file.path(data_dir, "icesdata.RData"))
-} else if (file.exists(file.path(vignette_data_dir, "icesdata.RData"))) {
-  load(file.path(vignette_data_dir, "icesdata.RData"))
-} else {
-  # Fallback: check if data is already in workspace or load from vignettes/data
-  if (!exists("icesdata")) {
-    data_file <- file.path("data", "icesdata.RData")
-    if (file.exists(data_file)) {
-      load(data_file)
-    } else {
-      stop("Could not find icesdata.RData file")
-    }
+if (!dir.exists(vignette_data_dir)) {
+  vignette_data_dir <- file.path("vignettes", "data")
+  if (!dir.exists(vignette_data_dir)) {
+    dir.create(vignette_data_dir, recursive = TRUE)
   }
-}
-
-# Load info and spp data similarly
-if (file.exists(file.path(data_dir, "info.RData"))) {
-  load(file.path(data_dir, "info.RData"))
-} else if (file.exists(file.path(vignette_data_dir, "info.RData"))) {
-  load(file.path(vignette_data_dir, "info.RData"))
-}
-
-if (file.exists(file.path(data_dir, "spp.RData"))) {
-  load(file.path(data_dir, "spp.RData"))
-} else if (file.exists(file.path(vignette_data_dir, "spp.RData"))) {
-  load(file.path(vignette_data_dir, "spp.RData"))
 }
 ```
 
@@ -129,7 +106,11 @@ if (exists("icesdata") && is(icesdata, "FLStocks")) {
   
   # Save to vignette data directory
   if (dir.exists(vignette_data_dir)) {
-    save(vary, file = file.path(vignette_data_dir, "vary.RData"))
+    if (!dir.exists(file.path(vignette_data_dir, "derived"))) {
+      dir.create(file.path(vignette_data_dir, "derived"), recursive = TRUE)
+    }
+    save(vary, file = file.path(vignette_data_dir, "derived", "vary.RData"))
+    message("Variation data saved to vary.RData")
   }
 } else {
   warning("icesdata not found or not an FLStocks object")
@@ -141,18 +122,167 @@ if (exists("icesdata") && is(icesdata, "FLStocks")) {
 Take the average values-at-age across all years for each stock, and fit a 
 Beverton and Holt stock recruitment relationship using steepness from `FishBase`.
 
-**Note:** This section requires additional functions from FLCandy or similar packages.
-If those packages are not available, this section will be skipped.
+This section fits equilibrium models (SRR) for each stock using different scenarios:
+- Beverton-Holt models: without priors (bh1), with steepness prior (bh2), with R0 fixed (bh3)
+- Ricker models: without priors (rk1), with steepness prior (rk2), with R0 fixed (rk3)
 
-```{r, srr, eval=FALSE}
-# This section requires FLCandy or equivalent functions
-# Uncomment and modify if you have access to these functions:
-#
-# ids <- names(icesdata)
-# fl <- fishlife(icesdata)
-# bm <- benchmark(icesdata)
-#
-# # Additional analysis code here
+```{r, srr}
+if (exists("icesdata") && is(icesdata, "FLStocks")) {
+  ids <- names(icesdata)
+  
+  # Extract FishLife parameters and benchmark reference points
+  fl <- fishlife(icesdata)
+  bm <- benchmark(icesdata)
+  
+  # Fit segreg models for R0 calculation
+  sgs <- FLBRPs(plyr::llply(icesdata, FLCandy::eql, model = "segreg"))
+  
+  # Calculate geometric mean for segreg models
+  gms <- plyr::llply(sgs, function(x) {
+    model(x) <- FLife::geomean()$model
+    params(x)["a"] <- params(x)["a"] %*% params(x)["b"]
+    params(x) <- params(x)[1]
+    brp(x)
+  })
+  
+  # Extract R0 values
+  R0 <- plyr::ldply(sgs, function(x) {
+    data.frame(r0 = c(params(x)["a"] * params(x)["b"]))
+  })
+  
+  # Set up parallel processing
+  ncores <- max(1, detectCores() - 4)
+  cl <- makeCluster(ncores)
+  registerDoParallel(cl)
+  
+  # Fit Beverton-Holt models
+  bh1 <- foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(FLCandy::updateRefs(FLCandy::eql(icesdata[[id]], model = "bevholtSV")))
+  }
+  names(bh1) <- ids
+  
+  bh2 <- foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(FLCandy::updateRefs(FLCandy::eql(icesdata[[id]], model = "bevholtSV", 
+        prior_s = fl[fl$.id == id, "s"], cv_s = 0.1)))
+  }
+  names(bh2) <- ids
+  
+  bh3 <- foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(FLCandy::updateRefs(FLCandy::eql(icesdata[[id]], model = "bevholtSV", 
+        prior_r0 = R0[R0$.id == id, "r0"], cv_r0 = 0.1)))
+  }
+  names(bh3) <- ids
+  
+  # Fit Ricker models
+  rk1 <- foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(FLCandy::updateRefs(FLCandy::eql(icesdata[[id]], model = "rickerSV")))
+  }
+  names(rk1) <- ids
+  
+  rk2 <- foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(FLCandy::updateRefs(FLCandy::eql(icesdata[[id]], model = "rickerSV", 
+        prior_s = fl[fl$.id == id, "s"], cv_s = 0.1)))
+  }
+  names(rk2) <- ids
+  
+  rk3 <- foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(FLCandy::updateRefs(FLCandy::eql(icesdata[[id]], model = "rickerSV", 
+        prior_r0 = R0[R0$.id == id, "r0"], cv_r0 = 0.1)))
+  }
+  names(rk3) <- ids
+  
+  stopCluster(cl)
+  
+  # Save equilibrium models
+  if (dir.exists(vignette_data_dir)) {
+    if (!dir.exists(file.path(vignette_data_dir, "analysis"))) {
+      dir.create(file.path(vignette_data_dir, "analysis"), recursive = TRUE)
+    }
+    save(bh1, bh2, bh3, rk1, rk2, rk3, sgs, gms, bm, fl, R0, 
+         file = file.path(vignette_data_dir, "analysis", "eq.RData"))
+    message("Equilibrium models saved to eq.RData")
+  }
+} else {
+  warning("icesdata not found or not an FLStocks object")
+}
+```
+
+### Reference Points and Nonstationarity
+
+Calculate reference points for each stock-recruitment model scenario using 
+nonstationarity analysis. This evaluates how reference points change over time 
+given nonstationary biological parameters.
+
+```{r, rf}
+if (exists("icesdata") && is(icesdata, "FLStocks") && 
+    exists("bh1") && exists("bh2") && exists("bh3")) {
+  
+  ids <- names(icesdata)
+  
+  # Set up parallel processing
+  ncores <- max(1, detectCores() - 4)
+  cl <- makeCluster(ncores)
+  registerDoParallel(cl)
+  
+  # Calculate reference points for Beverton-Holt models
+  bh1rf <- foreach(id = ids, .combine = rbind.fill,
+          .packages = c("FLCore", "FLBRP", "FLCandy", "plyr")) %dopar% {
+    try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], bh1[[id]])))
+  }
+  
+  bh2rf <- foreach(id = ids, .combine = rbind,
+          .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], bh2[[id]])))
+  }
+  
+  bh3rf <- foreach(id = ids, .combine = rbind,
+          .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], bh3[[id]])))
+  }
+  
+  # Calculate reference points for Ricker models
+  rk1rf <- foreach(id = ids, .combine = rbind,
+          .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], rk1[[id]])))
+  }
+  
+  rk2rf <- foreach(id = ids, .combine = rbind,
+          .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], rk2[[id]])))
+  }
+  
+  rk3rf <- foreach(id = ids, .combine = rbind,
+          .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+    try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], rk3[[id]])))
+  }
+  
+  stopCluster(cl)
+  
+  # Combine all reference points
+  rf <- rbind(
+    cbind(SRR = "Beverton & Holt", rbind(
+      cbind(Scenario = 1, bh1rf),
+      cbind(Scenario = 2, bh2rf),
+      cbind(Scenario = 3, bh3rf))),
+    cbind(SRR = "Ricker", rbind(
+      cbind(Scenario = 1, rk1rf),
+      cbind(Scenario = 2, rk2rf),
+      cbind(Scenario = 3, rk3rf))))
+  
+  rf$Scenario <- factor(rf$Scenario, 
+                       labels = c("h & R0 Estimated", "Steepness Prior", "R0 Fixed"))
+  
+  # Save reference points
+  if (dir.exists(vignette_data_dir)) {
+    if (!dir.exists(file.path(vignette_data_dir, "reference-points"))) {
+      dir.create(file.path(vignette_data_dir, "reference-points"), recursive = TRUE)
+    }
+    save(rf, file = file.path(vignette_data_dir, "reference-points", "rf.RData"))
+    message("Reference points saved to rf.RData")
+  }
+} else {
+  warning("Required data not available - skipping reference point analysis")
+}
 ```
 
 ### Process Error
@@ -164,12 +294,82 @@ identify the correct process error structure. Incorrectly attributing process er
 the wrong model component (e.g. natural mortality vs selectivity) can lead to 
 biased estimates and management advice.
 
-```{r, pe, eval=FALSE}
-# Process error analysis code
-# This section requires additional setup and functions
+```{r, pe}
+if (exists("bh1") && exists("bh2") && exists("bh3") &&
+    exists("rk1") && exists("rk2") && exists("rk3")) {
+  
+  ids <- names(bh1)
+  
+  # Set up parallel processing
+  ncores <- max(1, detectCores() - 4)
+  cl <- makeCluster(ncores)
+  registerDoParallel(cl)
+  
+  # Calculate process error for Beverton-Holt models
+  bh1pe <- foreach(id = ids, .combine = rbind.fill,
+          .packages = c("FLCore", "FLBRP", "FLCandy", "dplyr")) %dopar% {
+    try(cbind(.id = id, model.frame(processError(bh1[[id]]), drop = TRUE)))
+  }
+  
+  bh2pe <- foreach(id = ids, .combine = rbind,
+          .packages = c("FLCore", "FLBRP", "FLCandy", "plyr")) %dopar% {
+    try(cbind(.id = id, model.frame(processError(bh2[[id]]), drop = TRUE)))
+  }
+  
+  bh3pe <- foreach(id = ids, .combine = rbind.fill,
+          .packages = c("FLCore", "FLBRP", "FLCandy", "dplyr")) %dopar% {
+    try(cbind(.id = id, model.frame(processError(bh3[[id]]), drop = TRUE)))
+  }
+  
+  # Calculate process error for Ricker models
+  rk1pe <- foreach(id = ids, .combine = rbind,
+          .packages = c("FLCore", "FLBRP", "FLCandy", "dplyr")) %dopar% {
+    try(cbind(.id = id, model.frame(processError(rk1[[id]]), drop = TRUE)))
+  }
+  
+  rk2pe <- foreach(id = ids, .combine = rbind,
+          .packages = c("FLCore", "FLBRP", "FLCandy", "dplyr")) %dopar% {
+    try(cbind(.id = id, model.frame(processError(rk2[[id]]), drop = TRUE)))
+  }
+  
+  rk3pe <- foreach(id = ids, .combine = rbind,
+          .packages = c("FLCore", "FLBRP", "FLCandy", "dplyr")) %dopar% {
+    try(cbind(.id = id, model.frame(processError(rk3[[id]]), drop = TRUE)))
+  }
+  
+  stopCluster(cl)
+  
+  # Combine all process error results
+  pe <- rbind(
+    cbind(SRR = "Beverton & Holt", rbind(
+      cbind(Scenario = 1, bh1pe),
+      cbind(Scenario = 2, bh2pe),
+      cbind(Scenario = 3, bh3pe))),
+    cbind(SRR = "Ricker", rbind(
+      cbind(Scenario = 1, rk1pe),
+      cbind(Scenario = 2, rk2pe),
+      cbind(Scenario = 3, rk3pe))))
+  
+  pe$Scenario <- factor(pe$Scenario, 
+                       labels = c("h & R0 Estimated", "Steepness Prior", "R0 Fixed"))
+  
+  # Save process error results
+  if (dir.exists(vignette_data_dir)) {
+    if (!dir.exists(file.path(vignette_data_dir, "analysis"))) {
+      dir.create(file.path(vignette_data_dir, "analysis"), recursive = TRUE)
+    }
+    save(pe, file = file.path(vignette_data_dir, "analysis", "pe.RData"))
+    message("Process error results saved to pe.RData")
+  }
+} else {
+  warning("Required equilibrium models not available - skipping process error analysis")
+}
 ```
 
 ### Time Series
+
+Extract time series statistics for all stocks including catch, exploitable biomass, 
+SSB, fishing mortality, harvest rate, and mean natural mortality.
 
 ```{r, ts}
 if (exists("icesdata") && is(icesdata, "FLStocks")) {
@@ -177,8 +377,14 @@ if (exists("icesdata") && is(icesdata, "FLStocks")) {
   
   # Save to vignette data directory
   if (dir.exists(vignette_data_dir)) {
-    save(ts, file = file.path(vignette_data_dir, "ts.RData"))
+    save(ts, file = file.path(vignette_data_dir, "analysis", "ts.RData"))
+    message("Time series data saved to ts.RData")
   }
+  
+  # Display summary
+  message(paste("Time series extracted for", length(unique(ts$.id)), "stocks"))
+  message(paste("Years covered:", min(ts$year, na.rm = TRUE), "to", 
+                max(ts$year, na.rm = TRUE)))
 } else {
   warning("icesdata not found or not an FLStocks object")
 }

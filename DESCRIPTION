@@ -33,6 +33,7 @@ Suggests:
     FLife,
     FLBRP,
     FLasher,
+    FLCandy,
     doParallel,
     foreach,
     parallel,
