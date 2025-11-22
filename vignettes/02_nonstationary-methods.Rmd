@@ -53,9 +53,9 @@ library(scales)
 library(ggpubr)
 
 # Load parallel processing
-library(doParallel)
-library(foreach)
-library(parallel)
+  library(doParallel)
+  library(foreach)
+  library(parallel)
 ```
 
 ## Introduction
@@ -87,7 +87,7 @@ Biological assumptions and variation by age, and year
 
 ```{r, vary}
 vary = plyr::ldply(icesdata, function(x) {
-  data.frame(
+    data.frame(
     mAge = !all(m(x)[1, ] == apply(m(x), 2, mean)),
     mYr = !all(apply(m(x), 2, mean) == mean(m(x)[, 1])),
     massYr = !all(apply(stock.wt(x), 2, mean) == mean(stock.wt(x)[, 1])),
@@ -100,14 +100,10 @@ vary = transform(vary,
   mByYr = ifelse(mYr, "M varys by Year", "M constant by Year"),
   matByYr = ifelse(matYr, "Mat varys by Year", "Mat constant by Year"),
   massByYr = ifelse(massYr, "Mass varys by Year", "Mass constant by Year")
-)
-
-# Save to vignette data directory
-if (!dir.exists(file.path(vignetteDataDir, "derived"))) {
-  dir.create(file.path(vignetteDataDir, "derived"), recursive = TRUE)
-}
-save(vary, file = file.path(vignetteDataDir, "derived", "vary.RData"))
-message("Variation data saved to vary.RData")
+  )
+  
+  # Save to vignette data directory
+save(vary, file = file.path(vignetteDataDir, "vary.RData"))
 ```
 
 ### Equilibrium Analysis
@@ -148,36 +144,36 @@ cl = makeCluster(ncores)
 registerDoParallel(cl)
 
 # Fit Beverton-Holt models
-bh1 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+bh1 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy", "FLRebuild")) %dopar% {
   try(FLCandy:::updateRefs(FLCandy::eql(icesdata[[id]], model = "bevholtSV")))
 }
 names(bh1) = ids
 
-bh2 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+bh2 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy", "FLRebuild")) %dopar% {
   try(FLCandy:::updateRefs(FLCandy::eql(icesdata[[id]], model = "bevholtSV", 
       prior_s = fl[fl$.id == id, "s"], cv_s = 0.1)))
 }
 names(bh2) = ids
 
-bh3 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+bh3 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy", "FLRebuild")) %dopar% {
   try(FLCandy:::updateRefs(FLCandy::eql(icesdata[[id]], model = "bevholtSV", 
       prior_r0 = R0[R0$.id == id, "r0"], cv_r0 = 0.1)))
 }
 names(bh3) = ids
 
 # Fit Ricker models
-rk1 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+rk1 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy", "FLRebuild")) %dopar% {
   try(FLCandy:::updateRefs(FLCandy::eql(icesdata[[id]], model = "rickerSV")))
 }
 names(rk1) = ids
 
-rk2 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+rk2 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy", "FLRebuild")) %dopar% {
   try(FLCandy:::updateRefs(FLCandy::eql(icesdata[[id]], model = "rickerSV", 
       prior_s = fl[fl$.id == id, "s"], cv_s = 0.1)))
 }
 names(rk2) = ids
 
-rk3 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
+rk3 = foreach(id = ids, .packages = c("FLCore", "FLBRP", "FLCandy", "FLRebuild")) %dopar% {
   try(FLCandy:::updateRefs(FLCandy::eql(icesdata[[id]], model = "rickerSV", 
       prior_r0 = R0[R0$.id == id, "r0"], cv_r0 = 0.1)))
 }
@@ -186,12 +182,8 @@ names(rk3) = ids
 stopCluster(cl)
 
 # Save equilibrium models
-if (!dir.exists(file.path(vignetteDataDir, "analysis"))) {
-  dir.create(file.path(vignetteDataDir, "analysis"), recursive = TRUE)
-}
 save(bh1, bh2, bh3, rk1, rk2, rk3, sgs, gms, bm, fl, R0, 
-     file = file.path(vignetteDataDir, "analysis", "eq.RData"))
-message("Equilibrium models saved to eq.RData")
+     file = file.path(vignetteDataDir, "eq.RData"))
 ```
 
 ### Reference Points and Nonstationarity
@@ -211,33 +203,33 @@ registerDoParallel(cl)
 # Calculate reference points for Beverton-Holt models
 bh1rf = foreach(id = ids, .combine = rbind.fill,
         .packages = c("FLCore", "FLBRP", "FLCandy", "plyr")) %dopar% {
-  try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], bh1[[id]])))
+  try(cbind(.id = id, FLCandy:::nonStationarity(icesdata[[id]], bh1[[id]])))
 }
 
 bh2rf = foreach(id = ids, .combine = rbind,
         .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
-  try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], bh2[[id]])))
+  try(cbind(.id = id, FLCandy:::nonStationarity(icesdata[[id]], bh2[[id]])))
 }
 
 bh3rf = foreach(id = ids, .combine = rbind,
         .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
-  try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], bh3[[id]])))
+  try(cbind(.id = id, FLCandy:::nonStationarity(icesdata[[id]], bh3[[id]])))
 }
 
 # Calculate reference points for Ricker models
 rk1rf = foreach(id = ids, .combine = rbind,
         .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
-  try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], rk1[[id]])))
+  try(cbind(.id = id, FLCandy:::nonStationarity(icesdata[[id]], rk1[[id]])))
 }
 
 rk2rf = foreach(id = ids, .combine = rbind,
         .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
-  try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], rk2[[id]])))
+  try(cbind(.id = id, FLCandy:::nonStationarity(icesdata[[id]], rk2[[id]])))
 }
 
 rk3rf = foreach(id = ids, .combine = rbind,
         .packages = c("FLCore", "FLBRP", "FLCandy")) %dopar% {
-  try(cbind(.id = id, FLCandy::nonStationarity(icesdata[[id]], rk3[[id]])))
+  try(cbind(.id = id, FLCandy:::nonStationarity(icesdata[[id]], rk3[[id]])))
 }
 
 stopCluster(cl)
@@ -257,11 +249,7 @@ rf$Scenario = factor(rf$Scenario,
                      labels = c("h & R0 Estimated", "Steepness Prior", "R0 Fixed"))
 
 # Save reference points
-if (!dir.exists(file.path(vignetteDataDir, "reference-points"))) {
-  dir.create(file.path(vignetteDataDir, "reference-points"), recursive = TRUE)
-}
-save(rf, file = file.path(vignetteDataDir, "reference-points", "rf.RData"))
-message("Reference points saved to rf.RData")
+save(rf, file = file.path(vignetteDataDir, "rf.RData"))
 ```
 
 ### Process Error
@@ -330,11 +318,7 @@ pe$Scenario = factor(pe$Scenario,
                      labels = c("h & R0 Estimated", "Steepness Prior", "R0 Fixed"))
 
 # Save process error results
-if (!dir.exists(file.path(vignetteDataDir, "analysis"))) {
-  dir.create(file.path(vignetteDataDir, "analysis"), recursive = TRUE)
-}
-save(pe, file = file.path(vignetteDataDir, "analysis", "pe.RData"))
-message("Process error results saved to pe.RData")
+save(pe, file = file.path(vignetteDataDir, "pe.RData"))
 ```
 
 ### Time Series
@@ -344,18 +328,9 @@ SSB, fishing mortality, harvest rate, and mean natural mortality.
 
 ```{r, ts}
 ts = tseries(icesdata)
-
-# Save to vignette data directory
-if (!dir.exists(file.path(vignetteDataDir, "analysis"))) {
-  dir.create(file.path(vignetteDataDir, "analysis"), recursive = TRUE)
-}
-save(ts, file = file.path(vignetteDataDir, "analysis", "ts.RData"))
-message("Time series data saved to ts.RData")
-
-# Display summary
-message(paste("Time series extracted for", length(unique(ts$.id)), "stocks"))
-message(paste("Years covered:", min(ts$year, na.rm = TRUE), "to", 
-              max(ts$year, na.rm = TRUE)))
+  
+  # Save to vignette data directory
+save(ts, file = file.path(vignetteDataDir, "ts.RData"))
 ```
 
 ## Session Info

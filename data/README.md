@@ -4,13 +4,11 @@ This directory contains **INPUT** data files that are included in the package an
 
 ## Structure
 
-### `stocks/`
 - `icesdata.RData` - Main ICES stock assessment data (FLStocks object)
   - Contains ICES Category 1 stock assessments
   - Analytical age-based assessments that have been benchmarked
   - Size: ~1.64 MB
 
-### `metadata/`
 - `info.RData` - Stock metadata and information
   - Contains stock identification, assessment models, and characteristics
   - Size: < 1 MB
@@ -19,16 +17,21 @@ This directory contains **INPUT** data files that are included in the package an
   - Contains taxonomic and biological characteristics
   - Size: < 1 MB
 
+- `lw.RData` - Length-weight relationship data
+  - Contains parameters for length-weight relationships
+  - Size: < 1 MB
+
 ## Usage
 
 ```r
 # Data is lazy-loaded when package is loaded
 library(icesdata)
 
-# Access data
-data(icesdata)  # Loads from data/stocks/icesdata.RData
-data(info)      # Loads from data/metadata/info.RData
-data(spp)       # Loads from data/metadata/spp.RData
+# Access data using standard R data() function
+data(icesdata)  # Main ICES stock data (FLStocks object)
+data(info)      # Stock metadata
+data(spp)       # Species information
+data(lw)        # Length-weight relationships
 ```
 
 ## Note
