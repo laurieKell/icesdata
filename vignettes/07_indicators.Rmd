@@ -1,0 +1,138 @@
+---
+title: "ICES Stocks - Indicators"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - Indicators}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/indicators-",
+  fig.path = "figures/indicators-",
+  fig.width = 8,
+  fig.height = 6,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+library(icesdata)
+library(FLCore)
+library(FLBRP)
+library(FLFishery)
+library(FLasher)
+library(FLife)
+library(plyr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(ggpubr)
+library(scales)
+
+if (requireNamespace("GGally", quietly = TRUE)) {
+  library(GGally)
+}
+if (requireNamespace("ggcorrplot", quietly = TRUE)) {
+  library(ggcorrplot)
+}
+if (requireNamespace("ggplotFL", quietly = TRUE)) {
+  library(ggplotFL)
+}
+if (requireNamespace("ss3om", quietly = TRUE)) {
+  library(ss3om)
+}
+if (requireNamespace("r4ss", quietly = TRUE)) {
+  library(r4ss)
+}
+if (requireNamespace("FLCandy", quietly = TRUE)) {
+  library(FLCandy)
+}
+```
+
+## Introduction
+
+Progress towards ecosystem-based management (EBM) has been slow despite multiple governments committing to its implementation. Technical challenges and the uncertainty of complex models are often cited as reasons for the slow integration of ecosystem information into management decisions.
+
+Understanding the structure of marine food webs and how they, as well as the services they support, respond when perturbed is a fundamental prerequisite of EBM. This understanding can help to identify trade-offs and assess the risks of ocean uses as well as the risks of failing to respond to pressures such as climate change.
+
+**Note:** This vignette requires external data files and SS3 outputs. Some sections may not run without additional setup.
+
+```{r, source, eval=FALSE}
+# External source files needed for indicators
+# source("C:/active/FLCandy/R/indicatorsBiol.R")
+# source("C:/active/jabba-z/source/jabba-utils.R")
+# source("C:/active/FLCandy/R/abi.R")
+```
+
+```{r, data-load}
+formas_data_dir <- get_vignette_data_dir()
+if (is.null(formas_data_dir)) {
+  formas_data_dir <- system.file("formas/data", package = "icesdata")
+  if (!dir.exists(formas_data_dir) && dir.exists("formas/data")) {
+    formas_data_dir <- "formas/data"
+  }
+}
+
+# SS3 directory
+ss3_dir <- NULL
+if (!is.null(formas_data_dir)) {
+  ss3_dir <- file.path(formas_data_dir, "ss3")
+  if (!dir.exists(ss3_dir)) {
+    ss3_dir <- NULL
+  }
+}
+
+# Stock list
+stocks <- c("ank.27.78abd", "bss.27.4bc7ad-h", "bss.27.8ab",
+            "cod 27a", "cod.27.24-32", "her.27.3031", "hke.27.3a46-8abd",
+            "hke.27.8c9a", "hom.27.2a4a5b6a7a-ce-k8", "mon.27.8c9a",
+            "pil.27.8abd", "pil.27.8c9a", "pra.27.3a4a")
+```
+
+```{r, ss3-data, eval=FALSE}
+# SS3 data loading - requires r4ss and ss3om packages
+# if (!is.null(ss3_dir) && requireNamespace("r4ss", quietly = TRUE) && 
+#     requireNamespace("ss3om", quietly = TRUE)) {
+#   ss1 <- plyr::mlply(data.frame(.id = stocks), function(.id) {
+#     try(r4ss::SS_output(file.path(ss3_dir, .id), covar = FALSE))
+#   })
+#   names(ss1) <- stocks
+#   
+#   ss2 <- plyr::mlply(data.frame(.id = stocks), function(.id) {
+#     try(ss3om::readFLSss3(file.path(ss3_dir, .id)))
+#   })
+#   names(ss2) <- stocks
+#   
+#   ss3 <- plyr::llply(ss1, function(.id) {
+#     try(ss3om::buildFLSss330(.id))
+#   })
+#   
+#   sr <- plyr::mlply(data.frame(.id = stocks), function(.id) {
+#     try(ss3om::readFLSRss3(file.path(ss3_dir, .id)))
+#   })
+#   names(sr) <- stocks
+#   
+#   ss3 <- FLStocks(ss3[!plyr::laply(ss3, function(.id) "try-error" %in% class(.id))])
+#   
+#   if (!is.null(formas_data_dir)) {
+#     save(ss1, ss2, ss3, file = file.path(formas_data_dir, "ss3", "ss.RData"))
+#   }
+# }
+```
+
+**Figure `r iFig <- iFig + 1; iFig`** Indicators analysis
+

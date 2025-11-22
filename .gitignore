@@ -1,0 +1,74 @@
+# R package build artifacts
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# R package build outputs
+.Rcheck/
+*.tar.gz
+*.zip
+*.pdf
+
+# R package documentation
+man/*.Rd
+# Note: NAMESPACE is kept in repo for convenience (even though auto-generated)
+# NAMESPACE
+
+# Vignette outputs
+vignettes/*.html
+vignettes/*.pdf
+vignettes/*.R
+vignettes/cache/
+vignettes/figures/
+
+# Test outputs
+tests/testthat/_snaps/
+tests/testthat/.svn/
+
+# Data directories (large files)
+data/
+data-raw/
+
+# Documentation directories
+docs/
+_backup/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.log
+
+# Compiled files
+*.o
+*.so
+*.dll
+
+# Package specific
+inst/doc/
+
+# Development notes (optional - uncomment if you want to ignore)
+# TODO
+# .notes
+# NOTES.md

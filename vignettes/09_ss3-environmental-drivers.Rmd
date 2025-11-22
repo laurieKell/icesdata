@@ -1,0 +1,76 @@
+---
+title: "ICES Stocks - Potential Environmental Drivers"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - Potential Environmental Drivers}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/ss3-environmental-drivers-",
+  fig.path = "figures/ss3-environmental-drivers-",
+  fig.width = 10,
+  fig.height = 6,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+library(icesdata)
+library(ggplot2)
+library(scales)
+```
+
+## Introduction
+
+Based on the list of fish stocks provided, here are some potential environmental drivers that could affect their productivity:
+
+## Temperature and Salinity
+
+Temperature and salinity changes due to climate change are among the most commonly explored environmental factors affecting fish stocks. Warming waters can alter the distribution and range of fish populations, with some species moving to higher latitudes. Sudden temperature rises and ocean acidification can also lead to loss of marine habitats and species.
+
+Specific examples from the list that could be impacted:
+
+- Cod stocks (cod.27.24-32, cod.27.7a) - North Sea cod declines have been attributed in part to changing climate resulting in fewer juvenile cod surviving to adulthood
+- Herring (her.27.3031) - Changes in Baltic Sea temperature and salinity could impact herring stocks
+
+## Prey Availability
+
+The availability of prey species is another key driver of fish stock productivity. Climate change can alter the structure of marine food webs and ecosystems, affecting the prey available for commercial fish species.
+
+Potential impacts on listed stocks:
+
+- Hake (hke.27.3a46-8abd, hke.27.8c9a) - Changes in prey availability due to shifting ecosystems could affect hake productivity
+- Horse mackerel (hom.27.2a4a5b6a7a-ce-k8) - Prey species distribution may change with warming waters
+
+## Habitat Degradation
+
+Fishing practices like bottom trawling can damage sensitive seafloor habitats that are important for many fish species. Pollution, coastal development, and climate change impacts like coral bleaching also degrade essential fish habitats.
+
+Species from the list that rely on vulnerable habitats:
+
+- Anglerfish (ank.27.78abd, mon.27.78abd, mon.27.8c9a) - Anglerfish use reefs and rocky bottoms that could be impacted by trawling or habitat changes
+- Northern shrimp (pra.27.3a4a) - Shrimp can be affected by degradation of benthic habitats
+
+## Overfishing and Bycatch
+
+Overfishing remains one of the most significant threats to fish populations globally. Excessive fishing pressure can deplete stocks faster than they can replenish. Bycatch of vulnerable species like sharks, turtles and mammals also harms the broader marine ecosystem.
+
+Many of the stocks listed, especially those that have been fished since the mid-20th century, have likely experienced overfishing impacts historically. Effective fishery management is critical for their ongoing productivity.
+
+In summary, while each fish stock faces a unique combination of environmental pressures, climate change impacts like warming, acidification and ecosystem shifts are likely to be increasingly important drivers for all of them in the coming decades. Habitat degradation, overfishing and multi-species interactions also continue to be key factors affecting fish productivity that managers will need to account for.
+

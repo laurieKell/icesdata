@@ -1,0 +1,100 @@
+---
+title: "ICES Stocks - Operating Models"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - Operating Models}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/operating-models-",
+  fig.path = "figures/operating-models-",
+  fig.width = 10,
+  fig.height = 12,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+library(icesdata)
+library(FLCore)
+library(FLasher)
+library(FLBRP)
+library(FLife)
+library(plyr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(scales)
+library(ggpubr)
+
+if (requireNamespace("FLCandy", quietly = TRUE)) {
+  library(FLCandy)
+}
+if (requireNamespace("statcomp", quietly = TRUE)) {
+  library(statcomp)
+}
+```
+
+## Introduction
+
+ICES Category 1 stock assessments, analytical age based assessments that have been benchmarked.
+
+This vignette demonstrates the construction of operating models for ICES stocks.
+
+**Note:** This vignette requires external data files and FLCandy functions.
+
+```{r, data-load}
+formas_data_dir <- get_vignette_data_dir()
+if (is.null(formas_data_dir)) {
+  formas_data_dir <- system.file("formas/data", package = "icesdata")
+  if (!dir.exists(formas_data_dir) && dir.exists("formas/data")) {
+    formas_data_dir <- "formas/data"
+  }
+}
+
+# Load data files similar to 03_summary-plots.Rmd
+if (!is.null(formas_data_dir)) {
+  inputs_dir <- file.path(formas_data_dir, "inputs")
+  stock_files <- c(
+    "Updated_stks_n82_R0_updated202408.RData",
+    "Updated_stks_n81_R0_updated2023.RData"
+  )
+  
+  for (stock_file in stock_files) {
+    stocks_file <- file.path(inputs_dir, stock_file)
+    if (file.exists(stocks_file)) {
+      load(stocks_file, envir = .GlobalEnv)
+      break
+    }
+  }
+}
+```
+
+## $SPR_{0}$ Entropy
+
+```{r, spr0-entropy, fig.height=2.25, eval=FALSE}
+# This section requires additional data and functions
+# if (exists("spr0") && requireNamespace("statcomp", quietly = TRUE)) {
+#   entropy <- plyr::ddply(spr0, .(.id, wg, species.group), with,
+#     data.frame("SPR0" = permutation_entropy(
+#       ordinal_pattern_distribution(x = data, ndemb = 5))))
+# }
+```
+
+**Figure `r iFig <- iFig + 1; iFig`** Examples of high and low entropy stocks
+

@@ -1,0 +1,192 @@
+---
+title: "ICES Stocks - Nonstationary Methods"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - Nonstationary Methods}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/nonstationary-methods-",
+  fig.path = "figures/nonstationary-methods-",
+  fig.width = 10,
+  fig.height = 12,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+# Load icesdata package
+library(icesdata)
+
+# Load FLR ecosystem packages
+library(FLCore)
+library(FLBRP)
+library(FLife)
+
+# Load data manipulation packages
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(reshape2)
+
+# Load visualization packages
+library(ggplot2)
+library(scales)
+library(ggpubr)
+
+# Load parallel processing (if needed)
+if (requireNamespace("doParallel", quietly = TRUE) && 
+    requireNamespace("foreach", quietly = TRUE)) {
+  library(doParallel)
+  library(foreach)
+  library(parallel)
+  parallel_available <- TRUE
+} else {
+  parallel_available <- FALSE
+  message("doParallel and foreach not available - using sequential processing")
+}
+```
+
+## Introduction
+
+ICES Category 1 stock assessments, analytical age based assessments that have been benchmarked.
+
+```{r, data-load}
+# Load ICES data - using system.file for package-relative paths
+# First try to load from package data directory
+data_dir <- system.file("data", package = "icesdata")
+
+# Alternative: load from vignette data directory
+vignette_data_dir <- system.file("vignettes/data", package = "icesdata")
+
+if (file.exists(file.path(data_dir, "icesdata.RData"))) {
+  load(file.path(data_dir, "icesdata.RData"))
+} else if (file.exists(file.path(vignette_data_dir, "icesdata.RData"))) {
+  load(file.path(vignette_data_dir, "icesdata.RData"))
+} else {
+  # Fallback: check if data is already in workspace or load from vignettes/data
+  if (!exists("icesdata")) {
+    data_file <- file.path("data", "icesdata.RData")
+    if (file.exists(data_file)) {
+      load(data_file)
+    } else {
+      stop("Could not find icesdata.RData file")
+    }
+  }
+}
+
+# Load info and spp data similarly
+if (file.exists(file.path(data_dir, "info.RData"))) {
+  load(file.path(data_dir, "info.RData"))
+} else if (file.exists(file.path(vignette_data_dir, "info.RData"))) {
+  load(file.path(vignette_data_dir, "info.RData"))
+}
+
+if (file.exists(file.path(data_dir, "spp.RData"))) {
+  load(file.path(data_dir, "spp.RData"))
+} else if (file.exists(file.path(vignette_data_dir, "spp.RData"))) {
+  load(file.path(vignette_data_dir, "spp.RData"))
+}
+```
+
+### Summaries
+
+Biological assumptions and variation by age, and year 
+
+```{r, vary}
+if (exists("icesdata") && is(icesdata, "FLStocks")) {
+  vary <- plyr::ldply(icesdata, function(x) {
+    data.frame(
+      m.age = !all(m(x)[1, ] == apply(m(x), 2, mean)),
+      m.yr = !all(apply(m(x), 2, mean) == mean(m(x)[, 1])),
+      mass.yr = !all(apply(stock.wt(x), 2, mean) == mean(stock.wt(x)[, 1])),
+      mat.yr = !all(apply(mat(x), 2, mean) == mean(mat(x)[, 1]))
+    )
+  })
+  
+  vary <- transform(vary,
+    m.by.age = ifelse(m.age, "M varys by Age", "M constant by Age"),
+    m.by.yr = ifelse(m.yr, "M varys by Year", "M constant by Year"),
+    mat.by.yr = ifelse(mat.yr, "Mat varys by Year", "Mat constant by Year"),
+    mass.by.yr = ifelse(mass.yr, "Mass varys by Year", "Mass constant by Year")
+  )
+  
+  # Save to vignette data directory
+  if (dir.exists(vignette_data_dir)) {
+    save(vary, file = file.path(vignette_data_dir, "vary.RData"))
+  }
+} else {
+  warning("icesdata not found or not an FLStocks object")
+}
+```
+
+### Equilibrium Analysis
+
+Take the average values-at-age across all years for each stock, and fit a 
+Beverton and Holt stock recruitment relationship using steepness from `FishBase`.
+
+**Note:** This section requires additional functions from FLCandy or similar packages.
+If those packages are not available, this section will be skipped.
+
+```{r, srr, eval=FALSE}
+# This section requires FLCandy or equivalent functions
+# Uncomment and modify if you have access to these functions:
+#
+# ids <- names(icesdata)
+# fl <- fishlife(icesdata)
+# bm <- benchmark(icesdata)
+#
+# # Additional analysis code here
+```
+
+### Process Error
+
+Process error represents the inherent variability in population dynamics that is 
+not accounted for by the model structure. It differs from sampling error, which 
+arises from the data collection process. However, it can be difficult to consistently 
+identify the correct process error structure. Incorrectly attributing process error to 
+the wrong model component (e.g. natural mortality vs selectivity) can lead to 
+biased estimates and management advice.
+
+```{r, pe, eval=FALSE}
+# Process error analysis code
+# This section requires additional setup and functions
+```
+
+### Time Series
+
+```{r, ts}
+if (exists("icesdata") && is(icesdata, "FLStocks")) {
+  ts <- tseries(icesdata)
+  
+  # Save to vignette data directory
+  if (dir.exists(vignette_data_dir)) {
+    save(ts, file = file.path(vignette_data_dir, "ts.RData"))
+  }
+} else {
+  warning("icesdata not found or not an FLStocks object")
+}
+```
+
+## Session Info
+
+```{r, session-info}
+sessionInfo()
+```
+

@@ -1,0 +1,141 @@
+---
+title: "ICES Stocks - SS3 Analysis"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - SS3 Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/ss3-analysis-",
+  fig.path = "figures/ss3-analysis-",
+  fig.width = 8,
+  fig.height = 6,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+library(icesdata)
+library(FLCore)
+library(FLBRP)
+library(FLFishery)
+library(FLasher)
+library(FLife)
+library(plyr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(ggpubr)
+library(scales)
+
+if (requireNamespace("ggplotFL", quietly = TRUE)) {
+  library(ggplotFL)
+}
+if (requireNamespace("ss3om", quietly = TRUE)) {
+  library(ss3om)
+}
+if (requireNamespace("r4ss", quietly = TRUE)) {
+  library(r4ss)
+}
+if (requireNamespace("doParallel", quietly = TRUE)) {
+  library(doParallel)
+}
+if (requireNamespace("parallel", quietly = TRUE)) {
+  library(parallel)
+}
+if (requireNamespace("foreach", quietly = TRUE)) {
+  library(foreach)
+}
+```
+
+## Introduction
+
+This vignette demonstrates the analysis of SS3 (Stock Synthesis 3) assessment outputs for ICES stocks, including the construction of operating models and evaluation of alternative scenarios.
+
+Progress towards ecosystem-based management (EBM) has been slow despite multiple governments committing to its implementation. Technical challenges and the uncertainty of complex models are often cited as reasons for the slow integration of ecosystem information into management decisions.
+
+**Note:** This vignette requires SS3 output files and external packages (r4ss, ss3om). Some sections may not run without additional setup.
+
+```{r, source, eval=FALSE}
+# External source files needed
+# source("C:/active/FLCandy/R/indicatorsBiol.R")
+# source("C:/active/jabba-z/source/jabba-utils.R")
+# source("C:/active/FLCandy/R/abi.R")
+```
+
+```{r, data-load}
+formas_data_dir <- get_vignette_data_dir()
+if (is.null(formas_data_dir)) {
+  formas_data_dir <- system.file("formas/data", package = "icesdata")
+  if (!dir.exists(formas_data_dir) && dir.exists("formas/data")) {
+    formas_data_dir <- "formas/data"
+  }
+}
+
+# SS3 directory
+ss3_dir <- NULL
+if (!is.null(formas_data_dir)) {
+  ss3_dir <- file.path(formas_data_dir, "ss3")
+  if (!dir.exists(ss3_dir)) {
+    ss3_dir <- NULL
+  }
+}
+
+# Stock list
+stocks <- c("ank.27.78abd", "bss.27.4bc7ad-h", "bss.27.8ab", "cod 27a", 
+            "cod.27.24-32", "her.27.3031", "her.27.25-2932", 
+            "hke.27.3a46-8abd", "hke.27.8c9a",
+            "hom.27.2a4a5b6a7a-ce-k8", "mon.27.8c9a", 
+            "pil.27.8abd", "pil.27.8c9a", "pra.27.3a4a")
+```
+
+```{r, ss3-load, eval=FALSE}
+# SS3 data loading - requires r4ss and ss3om packages
+# This section is disabled as it requires external SS3 outputs
+# if (!is.null(ss3_dir) && requireNamespace("r4ss", quietly = TRUE) && 
+#     requireNamespace("ss3om", quietly = TRUE)) {
+#   ss1 <- plyr::mlply(data.frame(.id = stocks), function(.id) {
+#     try(r4ss::SS_output(file.path(ss3_dir, .id), covar = FALSE))
+#   })
+#   names(ss1) <- stocks
+#   
+#   fls <- FLStocks(plyr::llply(ss1, function(.id) {
+#     try(ss3om::buildFLSss330(.id))
+#   }))
+#   
+#   sr <- plyr::mlply(data.frame(.id = stocks), function(.id) {
+#     try(ss3om::readFLSRss3(file.path(ss3_dir, .id)))
+#   })
+#   names(sr) <- stocks
+# }
+```
+
+## Scenarios
+
+This section demonstrates the creation and analysis of alternative SS3 scenarios for stock assessment models.
+
+```{r, scenarios, eval=FALSE}
+# Scenario creation - requires SS3 directory structure
+# main <- c("Basecase", "Mbyage", "Mfixed")
+# m <- c("Low", "Med", "High")
+# fecundity <- c("", "fixed")
+# scen <- expand.grid(m = m, main = main, fecundity = fecundity)[, c(2, 1, 3)]
+```
+
+**Figure `r iFig <- iFig + 1; iFig`** SS3 scenario analysis
+

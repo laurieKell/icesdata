@@ -1,0 +1,55 @@
+# icesdata
+
+Comprehensive package for ICES age-structured stock assessment data, including utility functions for data processing, analysis, and visualization.
+
+## Installation
+
+### From GitHub
+
+```r
+# Install devtools if needed
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+
+# Install from GitHub
+devtools::install_github("lauriekell/icesdata")
+```
+
+### From Local Source
+
+```r
+# Install from local source
+devtools::install("path/to/icesdata")
+```
+
+## Features
+
+- **FLR method extensions** for ebiomass, benchmark, fishlife, eqsim, and kobe indicators
+- **Generic function definitions** for ICES stock assessment utilities
+- **Methods for FLStock, FLStocks, and FLBRP objects**
+
+## Core Functions (with methods implemented)
+
+- `ebiomass` - Methods for FLStock and FLBRP
+- `benchmark` - Methods for FLStock, FLStocks, and FLBRP  
+- `fishlife` - Methods for FLStock and FLStocks
+- `eqsim` - Methods for FLStock and FLStocks
+- `FLifePar` - Methods for FLStock and FLStocks
+- `kobe` - Methods for FLStock and FLBRP
+
+## Usage
+
+```r
+library(icesdata)
+
+# Use FLR methods on stock objects
+ebiomass_result <- ebiomass(stock_object)
+benchmark_result <- benchmark(stock_object)
+kobe_indicators <- kobe(stock_object)
+```
+
+## Dependencies
+
+- FLCore (for FLR functionality)
+- methods, stats, utils (base R)

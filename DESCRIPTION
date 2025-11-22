@@ -1,0 +1,41 @@
+Package: icesdata
+Type: Package
+Title: ICES Age-Structured Stock Assessment Data and Utilities
+Version: 0.1.0
+Date: 2024-12-19
+Author: ICES Working Group
+Maintainer: ICES Working Group <ices@ices.dk>
+Description: Comprehensive package for ICES age-structured stock assessment data, 
+    including utility functions for data processing, analysis, and visualization. 
+    Consolidates functionality from multiple ICES-related packages into a single, 
+    maintainable codebase.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.3
+Depends: 
+    R (>= 4.0.0)
+Imports: 
+    methods,
+    stats,
+    utils,
+    FLCore,
+    plyr,
+    stringr
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    ggplot2,
+    dplyr,
+    tidyr,
+    reshape2,
+    FLife,
+    FLBRP,
+    FLasher,
+    doParallel,
+    foreach,
+    parallel,
+    scales,
+    ggpubr
+VignetteBuilder: knitr

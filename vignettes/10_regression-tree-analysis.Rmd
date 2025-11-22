@@ -1,0 +1,227 @@
+---
+title: "ICES Stocks - Regression Tree Analysis"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - Regression Tree Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/regression-tree-analysis-",
+  fig.path = "figures/regression-tree-analysis-",
+  fig.width = 10,
+  fig.height = 6,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+library(icesdata)
+library(FLCore)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(reshape2)
+library(ggplot2)
+library(scales)
+
+if (requireNamespace("ggplotFL", quietly = TRUE)) {
+  library(ggplotFL)
+}
+if (requireNamespace("rpart", quietly = TRUE)) {
+  library(rpart)
+}
+if (requireNamespace("rpart.plot", quietly = TRUE)) {
+  library(rpart.plot)
+}
+if (requireNamespace("caret", quietly = TRUE)) {
+  library(caret)
+}
+if (requireNamespace("randomForest", quietly = TRUE)) {
+  library(randomForest)
+}
+if (requireNamespace("dtwclust", quietly = TRUE)) {
+  library(dtwclust)
+}
+if (requireNamespace("statcomp", quietly = TRUE)) {
+  library(statcomp)
+}
+```
+
+## Introduction
+
+This vignette demonstrates regression tree analysis of fisheries data to identify key drivers of process error and stock dynamics.
+
+```{r, data-load}
+formas_data_dir <- get_vignette_data_dir()
+if (is.null(formas_data_dir)) {
+  formas_data_dir <- system.file("formas/data", package = "icesdata")
+  if (!dir.exists(formas_data_dir) && dir.exists("formas/data")) {
+    formas_data_dir <- "formas/data"
+  }
+}
+
+# Load data files if available
+if (!is.null(formas_data_dir)) {
+  # Try loading processed data
+  pe_file <- file.path(formas_data_dir, "pe.RData")
+  info_file <- file.path(formas_data_dir, "info.RData")
+  vary_file <- file.path(formas_data_dir, "vary.RData")
+  
+  if (file.exists(pe_file)) load(pe_file, envir = .GlobalEnv)
+  if (file.exists(info_file)) load(info_file, envir = .GlobalEnv)
+  if (file.exists(vary_file)) load(vary_file, envir = .GlobalEnv)
+  
+  # Try loading stock data
+  inputs_dir <- file.path(formas_data_dir, "inputs")
+  stock_files <- c(
+    "Updated_stks_n82_R0_updated202408.RData",
+    "Updated_stks_n81_R0_updated2023.RData"
+  )
+  
+  for (stock_file in stock_files) {
+    stocks_file <- file.path(inputs_dir, stock_file)
+    if (file.exists(stocks_file)) {
+      load(stocks_file, envir = .GlobalEnv)
+      break
+    }
+  }
+}
+```
+
+## Regression Tree
+
+```{r, prepare-data, eval=exists("pe") && exists("vary") && exists("info") && exists("ICESStocks")}
+if (exists("pe") && exists("vary") && exists("info") && exists("ICESStocks") &&
+    requireNamespace("statcomp", quietly = TRUE)) {
+  
+  # Calculate entropy for process error
+  dat <- merge(vary, plyr::ddply(pe, .(.id), with,
+    data.frame(V1 = permutation_entropy(
+      ordinal_pattern_distribution(data, ndemb = 5)))), by = ".id")
+  
+  # Merge with info
+  dat <- merge(dat, info[, -10], by = ".id")
+  
+  # Add mean M
+  dat <- merge(dat, plyr::ldply(ICESStocks, function(x) {
+    data.frame(M = mean(FLCore::m(x)))
+  }), by = ".id")
+  
+  # Add FishLife parameters
+  dat <- merge(dat, plyr::ldply(ICESStocks, function(x) {
+    attributes(x)$fishlife
+  }), by = ".id")
+  
+  # Calculate transformed variables
+  dat <- transform(dat, lmlinf = lm / linf, klinf = k / linf)
+  
+  # Prepare features
+  features <- c("m.age", "m.yr", "mass.yr", "mat.yr", "Model", "M", "klinf", "lmlinf")
+  
+  # Convert binary variables to factors
+  dat[, c("m.age", "m.yr", "mass.yr", "mat.yr", "Model")] <-
+    lapply(dat[, c("m.age", "m.yr", "mass.yr", "mat.yr", "Model")], as.factor)
+}
+```
+
+```{r, regression-tree, eval=exists("dat") && requireNamespace("rpart", quietly = TRUE)}
+if (exists("dat") && requireNamespace("rpart", quietly = TRUE)) {
+  tree <- rpart::rpart(V1 ~ ., data = dat[, c("V1", features)], method = "anova")
+  
+  treePlot <- function() {
+    if (requireNamespace("rpart.plot", quietly = TRUE)) {
+      rpart.plot::rpart.plot(tree, shadow.col = "gray", nn = TRUE)
+    }
+  }
+}
+```
+
+```{r, variable-importance, eval=exists("tree")}
+if (exists("tree")) {
+  varImp <- data.frame(
+    Variable = names(tree$variable.importance),
+    Importance = tree$variable.importance
+  )
+  
+  varImp <- varImp[order(-varImp$Importance), ]
+  
+  p2 <- ggplot(varImp, aes(x = reorder(Variable, Importance), y = Importance)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    coord_flip() +
+    theme_ices() +
+    labs(title = "Variable Importance in Regression Tree",
+         x = "Variable",
+         y = "Importance")
+  
+  p2
+}
+```
+
+```{r, tree-plot, eval=exists("treePlot")}
+if (exists("treePlot")) {
+  treePlot()
+}
+```
+
+**Figure `r iFig <- iFig + 1; iFig`** Regression tree and variable importance
+
+```{r, clustering, eval=exists("pe") && requireNamespace("dtwclust", quietly = TRUE)}
+if (exists("pe") && requireNamespace("dtwclust", quietly = TRUE) &&
+    requireNamespace("tidyr", quietly = TRUE)) {
+  
+  # Reshape the data to wide format
+  data_wide <- pe %>%
+    dplyr::select(.id, year, data) %>%
+    tidyr::pivot_wider(names_from = .id, values_from = data)
+  
+  # Remove the year column and convert to matrix
+  dm <- as.matrix(data_wide[, -1])
+  dm <- dm[, apply(dm, 2, function(x) sum(!is.na(x))) > 30]
+  dm <- dm[apply(dm, 1, function(x) !any(is.na(x))), ]
+  
+  # Set a seed for reproducibility
+  set.seed(123)
+  
+  # Perform DTW clustering
+  dtw_clusters <- dtwclust::tsclust(t(dm), type = "hierarchical", k = 5,
+                                     distance = "dtw", centroid = "pam",
+                                     control = dtwclust::hierarchical_control(method = "complete"))
+  
+  # Get cluster assignments
+  clusters <- data.frame(
+    .id = colnames(dm),
+    cluster = cutree(dtw_clusters, k = 10)
+  )
+  
+  # Plot clustered time series
+  dm_melted <- reshape2::melt(dm)
+  dm_melted <- merge(transform(dm_melted, .id = Var2, pe = value, year = Var1), 
+                     clusters, by = ".id")
+  
+  ggplot(dm_melted) +
+    geom_line(aes(year, pe, group = .id)) +
+    facet_wrap(~cluster, scale = "free") +
+    theme_ices() +
+    labs(title = "DTW Clustering of Process Error Time Series",
+         x = "Year",
+         y = "Process Error")
+}
+```
+
+**Figure `r iFig <- iFig + 1; iFig`** DTW clustering of process error time series
+

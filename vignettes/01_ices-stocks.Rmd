@@ -1,0 +1,391 @@
+---
+title: "ICES Stocks - Data Sets"
+author: "L Kell"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICES Stocks - Data Sets}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
+bibliography: refs.bib
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  cache = TRUE,
+  cache.path = "cache/ices-stocks-",
+  fig.path = "figures/ices-stocks-",
+  fig.width = 10,
+  fig.height = 12,
+  dev = "png"
+)
+
+iFig <- 0
+iTab <- 0
+```
+
+```{r, libraries}
+# Load icesdata package
+library(icesdata)
+
+# Load FLR ecosystem packages
+library(FLCore)
+library(FLasher)
+library(FLBRP)
+library(FLife)
+
+# Load data manipulation packages
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(reshape2)
+
+# Load visualization packages
+library(ggplot2)
+library(scales)
+library(ggpubr)
+
+# Load additional packages if available
+if (requireNamespace("FLAssess", quietly = TRUE)) {
+  library(FLAssess)
+}
+
+if (requireNamespace("ggplotFL", quietly = TRUE)) {
+  library(ggplotFL)
+}
+
+if (requireNamespace("FLCandy", quietly = TRUE)) {
+  library(FLCandy)
+}
+
+if (requireNamespace("FLSRTMB", quietly = TRUE)) {
+  library(FLSRTMB)
+}
+
+if (requireNamespace("statcomp", quietly = TRUE)) {
+  library(statcomp)
+}
+
+if (requireNamespace("DescTools", quietly = TRUE)) {
+  library(DescTools)
+}
+```
+
+## Introduction
+
+ICES Category 1 stock assessments, analytical age based assessments that have been benchmarked.
+
+**Note:** This vignette requires external data files. Some sections may not run without additional setup.
+
+```{r, source, eval=FALSE}
+# External source files - these need to be available for full functionality
+# source("C:/active/jabba-z/source/jabba-utils.R")
+# source("C:/active/FLCandy/R/spr0Yr.R")
+# source('C:/active/FLCandy/R/nonStationarity.R')
+```
+
+```{r, data-load}
+# Load ICES data using package-relative paths
+# Helper function from icesdata package
+formas_data_dir <- get_vignette_data_dir()
+
+# Try formas data directory
+if (is.null(formas_data_dir)) {
+  formas_data_dir <- system.file("formas/data", package = "icesdata")
+  if (!dir.exists(formas_data_dir)) {
+    if (dir.exists("formas/data")) {
+      formas_data_dir <- "formas/data"
+    } else {
+      formas_data_dir <- NULL
+    }
+  }
+}
+
+# Try package data directory
+data_dir <- system.file("data", package = "icesdata")
+
+# Try vignette data directory
+vignette_data_dir <- system.file("vignettes/data", package = "icesdata")
+
+# Load ICES stocks data
+if (!is.null(formas_data_dir)) {
+  inputs_dir <- file.path(formas_data_dir, "inputs")
+  
+  # Try multiple possible stock data file names
+  stock_files <- c(
+    "Updated_stks_n82_R0_updated202408.RData",
+    "Updated_stks_n81_R0_updated2023.RData",
+    "Updated_stks.RData"
+  )
+  
+  stocks_loaded <- FALSE
+  for (stock_file in stock_files) {
+    stocks_file <- file.path(inputs_dir, stock_file)
+    if (file.exists(stocks_file)) {
+      load(stocks_file, envir = .GlobalEnv)
+      # Rename ICESStocks to icesdata if needed
+      if (exists("ICESStocks") && !exists("icesdata")) {
+        icesdata <- ICESStocks
+      }
+      stocks_loaded <- TRUE
+      break
+    }
+  }
+  
+  if (!stocks_loaded && file.exists(file.path(data_dir, "icesdata.RData"))) {
+    load(file.path(data_dir, "icesdata.RData"), envir = .GlobalEnv)
+    stocks_loaded <- TRUE
+  }
+}
+
+# Load info data
+if (!is.null(formas_data_dir)) {
+  info_file <- file.path(formas_data_dir, "info.RData")
+  if (file.exists(info_file)) {
+    load(info_file, envir = .GlobalEnv)
+  } else {
+    # Try to read from CSV
+    db_file <- file.path(formas_data_dir, "inputs", "Database.csv")
+    if (file.exists(db_file)) {
+      info <- read.csv(db_file)[, -9]
+      names(info)[1] <- ".id"
+    }
+  }
+}
+
+# Load spp data
+if (!is.null(formas_data_dir)) {
+  spp_file <- file.path(formas_data_dir, "spp.RData")
+  if (file.exists(spp_file)) {
+    load(spp_file, envir = .GlobalEnv)
+  }
+}
+```
+
+### Meta-data
+
++ **Attributes** `FLStock` objects with attributes containing ICES benchmarks and `FishLife` life history parameters
++ **info** `data.frame` with ICES stock codes, expert Working Groups and stock assessment method
++ **spp** `data.frame` with ICES stock codes, common and latin names, and expert Working Groups
++ **`lw`** length weight relationships
+
+```{r, spp-data}
+# Species metadata - create if not already loaded
+if (!exists("spp")) {
+  stock <- c("ank.27.78abd", "aru.27.5a14", "aru.27.5b6a", "bss.27.4bc7ad-h", "bss.27.8ab", 
+          "cod.21.1", "cod.2127.1f14", "cod.27.1-2", "cod.27.1-2coastN", "cod.27.22-24", 
+          "cod.27.24-32", "cod.27.47d20", "cod.27.5a", "cod.27.5b1", "cod.27.6a", 
+          "cod.27.7a", "cod.27.7e-k", "had.27.1-2", "had.27.46a20", "had.27.5a", 
+          "had.27.5b", "had.27.6b", "had.27.7a", "had.27.7b-k", "her.27.1-24a514a", 
+          "her.27.20-24", "her.27.25-2932", "her.27.28", "her.27.3031", "her.27.3a47d", 
+          "her.27.5a", "her.27.6a7bc", "her.27.irls", "her.27.nirs", "hke.27.3a46-8abd", 
+          "hke.27.8c9a", "hom.27.2a4a5b6a7a-ce-k8", "hom.27.9a", "ldb.27.8c9a", "lin.27.5a", 
+          "lin.27.5b", "mac.27.nea", "meg.27.7b-k8abd", "meg.27.8c9a", "mon.27.78abd", 
+          "mon.27.8c9a", "pil.27.8abd", "pil.27.8c9a", "ple.27.21-23", "ple.27.420", 
+          "ple.27.7a", "ple.27.7d", "pok.27.1-2", "pok.27.3a46", "pok.27.5a", 
+          "pok.27.5b", "pra.27.3a4a", "reb.27.1-2", "reg.27.1-2", "reg.27.561214", 
+          "san.sa.1r", "san.sa.2r", "san.sa.3r", "san.sa.4", "sol.27.20-24", 
+          "sol.27.4", "sol.27.7a", "sol.27.7d", "sol.27.7e", "sol.27.7fg", 
+          "sol.27.8ab", "spr.27.22-32", "spr.27.3a4", "tur.27.4", "usk.27.5a14", 
+          "whb.27.1-91214", "whg.27.47d", "whg.27.6a", "whg.27.7a", "whg.27.7b-ce-k", 
+          "wit.27.3a47d")
+  
+  name <- c("Anglerfish", "Atlantic redfishes", "Atlantic redfishes", "European seabass", 
+         "European seabass", "Atlantic cod", "Atlantic cod", "Atlantic cod", 
+         "Atlantic cod", "Atlantic cod", "Atlantic cod", "Atlantic cod", 
+         "Atlantic cod", "Atlantic cod", "Atlantic cod", "Atlantic cod", 
+         "Atlantic cod", "Haddock", "Haddock", "Haddock", 
+         "Haddock", "Haddock", "Haddock", "Haddock", "Atlantic herring", 
+         "Atlantic herring", "Atlantic herring", "Atlantic herring", 
+         "Atlantic herring", "Atlantic herring", "Atlantic herring", 
+         "Atlantic herring", "Atlantic herring", "Atlantic herring", 
+         "European hake", "European hake", "Atlantic horse mackerel", 
+         "Atlantic horse mackerel", "Four-spot megrim", "Ling", 
+         "Ling", "Mackerel", "Megrim", "Megrim", "Anglerfish", 
+         "Anglerfish", "European pilchard", "European pilchard", 
+         "European plaice", "European plaice", "European plaice", 
+         "European plaice", "Saithe", "Saithe", "Saithe", 
+         "Saithe", "Northern prawn", "Redfish", "Redfish", "Redfish", 
+         "Sandeel", "Sandeel", "Sandeel", "Sandeel", "Sole", 
+         "Sole", "Sole", "Sole", "Sole", 
+         "Sole", "Sole", "Sprat", "Sprat", "Turbot", "Tusk", 
+         "Blue whiting", "Whiting", "Whiting", "Whiting", "Whiting", 
+         "Witch flounder")
+  
+  latin <- c("Lophius piscatorius", "Sebastes spp.", "Sebastes spp.", "Dicentrarchus labrax", 
+        "Dicentrarchus labrax", "Gadus morhua", "Gadus morhua", "Gadus morhua", 
+        "Gadus morhua", "Gadus morhua", "Gadus morhua", "Gadus morhua", 
+        "Gadus morhua", "Gadus morhua", "Gadus morhua", "Gadus morhua", 
+        "Gadus morhua", "Melanogrammus aeglefinus", "Melanogrammus aeglefinus", "Melanogrammus aeglefinus", 
+        "Melanogrammus aeglefinus", "Melanogrammus aeglefinus", "Melanogrammus aeglefinus", "Melanogrammus aeglefinus", "Clupea harengus", 
+        "Clupea harengus", "Clupea harengus", "Clupea harengus", 
+        "Clupea harengus", "Clupea harengus", "Clupea harengus", 
+        "Clupea harengus", "Clupea harengus", "Clupea harengus", 
+        "Merluccius merluccius", "Merluccius merluccius", "Trachurus trachurus", 
+        "Trachurus trachurus", "Lepidorhombus boscii", "Molva molva", 
+        "Molva molva", "Scomber scombrus", "Lepidorhombus whiffiagonis", 
+        "Lepidorhombus whiffiagonis", "Lophius piscatorius", 
+        "Lophius piscatorius", "Sardina pilchardus", "Sardina pilchardus", 
+        "Pleuronectes platessa", "Pleuronectes platessa", "Pleuronectes platessa", 
+        "Pleuronectes platessa", "Pollachius virens", "Pollachius virens", "Pollachius virens", 
+        "Pollachius virens", "Pandalus borealis", "Sebastes spp.", "Sebastes spp.", "Sebastes spp.", 
+        "Ammodytes spp.", "Ammodytes spp.", "Ammodytes spp.", "Ammodytes spp.", "Solea solea", 
+        "Solea solea", "Solea solea", "Solea solea", "Solea solea", 
+        "Solea solea", "Solea solea", "Sprattus sprattus", 
+        "Sprattus sprattus", "Scophthalmus maximus", "Brosme brosme", 
+        "Micromesistius poutassou", "Merlangius merlangus", "Merlangius merlangus", "Merlangius merlangus", 
+        "Merlangius merlangus", "Glyptocephalus cynoglossus")
+  
+  Genus <- c("Lophius", "Sebastes", "Sebastes", "Dicentrarchus", 
+          "Dicentrarchus", "Gadus", "Gadus", "Gadus", 
+          "Gadus", "Gadus", "Gadus", "Gadus", 
+          "Gadus", "Gadus", "Gadus", "Gadus", 
+          "Gadus", "Melanogrammus", "Melanogrammus", "Melanogrammus", 
+          "Melanogrammus", "Melanogrammus", "Melanogrammus", "Melanogrammus", "Clupea", 
+          "Clupea", "Clupea", "Clupea", 
+          "Clupea", "Clupea", "Clupea", 
+          "Clupea", "Clupea", "Clupea", 
+          "Merluccius", "Merluccius", "Trachurus", 
+          "Trachurus", "Lepidorhombus", "Molva", 
+          "Molva", "Scomber", "Lepidorhombus", 
+          "Lepidorhombus", "Lophius", 
+          "Lophius", "Sardina", "Sardina", 
+          "Pleuronectes", "Pleuronectes", "Pleuronectes", 
+          "Pleuronectes", "Pollachius", "Pollachius", "Pollachius", 
+          "Pollachius", "Pandalus", "Sebastes", "Sebastes", "Sebastes", 
+          "Ammodytes", "Ammodytes", "Ammodytes", "Ammodytes", "Solea", 
+          "Solea", "Solea", "Solea", "Solea", 
+          "Solea", "Solea", "Sprattus", 
+          "Sprattus", "Scophthalmus", "Brosme", 
+          "Micromesistius", "Merlangius", "Merlangius", "Merlangius", 
+          "Merlangius", "Glyptocephalus")
+  
+  spp <- data.frame(
+    stock = stock,
+    name = name,
+    spp = latin,
+    Genus = Genus,
+    Species = unlist(strsplit(latin, " "))[seq(2, length(latin) * 2, 2)]
+  )
+}
+```
+
+```{r, lw-data}
+# Length-weight relationships - create if not already loaded
+if (!exists("lw")) {
+  lw <- data.frame(
+    name = c(
+      "Anglerfish", "Atlantic redfishes", "European seabass", "Atlantic cod",
+      "Haddock", "Atlantic herring", "European hake", "Atlantic horse mackerel", 
+      "Four-spot megrim", "Ling", "Mackerel", "Megrim", "European pilchard",
+      "European plaice", "Saithe", "Northern prawn", "Redfish", "Sandeel", 
+      "Sole", "Sprat", "Turbot", "Tusk", "Blue whiting", "Whiting", "Witch flounder"),
+    latin = c(
+      "Lophius piscatorius", "Sebastes spp.", "Dicentrarchus labrax", "Gadus morhua", 
+      "Melanogrammus aeglefinus", "Clupea harengus", "Merluccius merluccius", "Trachurus trachurus", 
+      "Lepidorhombus boscii", "Molva molva", "Scomber scombrus", "Lepidorhombus whiffiagonis", 
+      "Sardina pilchardus", "Pleuronectes platessa", "Pollachius virens", "Pandalus borealis", 
+      "Sebastes marinus", "Ammodytes spp.", "Solea solea", "Sprattus sprattus", 
+      "Scophthalmus maximus", "Brosme brosme", "Micromesistius poutassou", "Merlangius merlangus", 
+      "Glyptocephalus cynoglossus"),
+    a = c(0.0045, 0.0050, 0.0075, 0.0061, 0.0053, 0.0032, 0.0048, 0.0059, 0.0046, 0.0038, 0.0057,
+          0.0046, 0.0059, 0.0038, 0.0062, 0.0015, 0.0050, 0.0055, 0.0042, 0.0050, 0.0071, 0.0060, 0.0052, 0.0054, 0.0043),
+    b = c(3.25, 3.10, 3.10, 3.04, 3.15, 3.24, 3.12, 3.08, 3.20, 3.25, 3.10, 3.20, 3.02, 3.20, 3.15, 2.98,
+        3.10, 3.05, 3.12, 3.10, 3.15, 3.18, 3.10, 3.15, 3.20),
+    Source = c(
+      "FishBase", "FishBase", "ResearchGate", "FishBase", "ScienceDirect", "ResearchGate", "ResearchGate",
+      "ResearchGate", "FishBase", "FishBase", "FishBase", "FishBase", "ResearchGate", "ScienceDirect",
+      "FishBase", "NAFO", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase", "FishBase")
+  )
+}
+```
+
+### Summaries
+
+#### Catch data
+
+```{r, catch-ices}
+if (exists("icesdata") && is(icesdata, "FLStocks")) {
+  ctc <- plyr::ldply(icesdata, function(x) as.data.frame(catch(x), drop = TRUE))
+  
+  # Use ICES theme
+  ggplot(plyr::ddply(ctc, .(.id), transform, catch = stdz(data))) +
+    geom_line(aes(year, catch), col = "blue") +
+    geom_text(aes(x = 1950, y = 2, label = .id), 
+              hjust = 0, vjust = 1, size = 3, color = "black") +
+    facet_wrap(~.id, scale = "free_y", ncol = 4) +
+    theme_ices(base_size = 16) +
+    theme(legend.position = "none", 
+          strip.text = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank()) +
+    labs(title = "Catch",
+         x = "Year",
+         y = "")
+} else {
+  warning("icesdata not found or not an FLStocks object")
+}
+```
+
+**Figure `r iFig <- iFig + 1; iFig`** ICES catches, these are those estimated by the model if
+a statistical catch-at-age method is used.
+
+```{r, catch-1903, eval=FALSE}
+# Historical catch data - requires external file
+# Uncomment if data file is available:
+#
+# if (!is.null(formas_data_dir)) {
+#   ctc1903_file <- file.path(formas_data_dir, "inputs", "NorthSea_stocks.csv")
+#   if (file.exists(ctc1903_file)) {
+#     ctc1903 <- read.csv(ctc1903_file)[, 1:14]
+#     ctc1903$Discards[is.na(ctc1903$Discards)] <- 0
+#     
+#     # Plot historical catches
+#   }
+# }
+```
+
+### Indices
+
+```{r, indices}
+if (!is.null(formas_data_dir)) {
+  idx_file <- file.path(formas_data_dir, "inputs", "Stock_indices.csv")
+  if (file.exists(idx_file)) {
+    idx <- read.csv(idx_file)[, 1:5]
+    names(idx) <- c(".id", "survey", "year", "data", "ages")
+    idx$data <- as.numeric(idx$data)
+    
+    smry <- plyr::ddply(idx, .(.id, survey), with, data.frame(n = length(data)))
+    smry2 <- plyr::ddply(smry, .(.id), with, data.frame(n = length(survey)))
+    
+    # Use ICES theme
+    ggplot(plyr::ddply(idx, .(survey, .id), transform, index = stdz(data, na.rm = TRUE))) +
+      geom_line(aes(year, index, col = survey)) +
+      geom_text(aes(x = 1950, y = 2, label = .id), 
+                hjust = 0, vjust = 1, size = 3, color = "black") +
+      facet_wrap(~.id, scale = "free_y", ncol = 4) +
+      theme_ices(base_size = 16) +
+      theme(legend.position = "none", 
+            strip.text = element_blank(),
+            axis.text = element_blank(),
+            axis.ticks = element_blank()) +
+      labs(title = "Indices",
+           x = "Year",
+           y = "")
+  }
+}
+```
+
+**Figure `r iFig <- iFig + 1; iFig`** Indices of abundance.
+
+## Session Info
+
+```{r, session-info}
+sessionInfo()
+```

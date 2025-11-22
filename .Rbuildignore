@@ -1,0 +1,43 @@
+# R package build artifacts
+^\.Rproj\.user$
+^\.Rhistory$
+^\.RData$
+^\.Ruserdata$
+^cache$
+^.*\.Rproj$
+
+# Data files (too large for build)
+^data/$
+^data-raw/$
+
+# Documentation build artifacts
+^docs/$
+^vignettes/.*\.html$
+^vignettes/cache/
+^vignettes/figures/
+^vignettes/Rmd/$
+
+# Test artifacts (keep tests directory)
+^tests/testthat/_snaps/$
+^tests/testthat/_snaps/.*$
+
+# OS generated files
+^\.DS_Store$
+^Thumbs\.db$
+
+# IDE files
+^\.vscode/$
+^\.idea/$
+^.*\.swp$
+^.*\.swo$
+
+# Temporary files
+^.*\.tmp$
+^.*\.temp$
+
+# Backup folder
+^_backup/$
+
+# Development files (commented out - typically kept in repo)
+# ^TODO$
+# ^\.notes$
