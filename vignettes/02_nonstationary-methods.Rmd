@@ -74,10 +74,12 @@ data(info)
 data(spp)
 
 # Set up vignette data directory for saving outputs
-vignetteDataDir = system.file("vignettes/data", package = "icesdata")
-if (!dir.exists(vignetteDataDir)) {
-  vignetteDataDir = file.path("vignettes", "data")
-  dir.create(vignetteDataDir, recursive = TRUE)
+vignetteDataDir = system.file("data/vignette-outputs", package = "icesdata")
+if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
+  vignetteDataDir = file.path("data", "vignette-outputs")
+  if (!dir.exists(vignetteDataDir)) {
+    dir.create(vignetteDataDir, recursive = TRUE)
+  }
 }
 ```
 
