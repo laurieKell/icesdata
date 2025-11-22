@@ -232,8 +232,6 @@ setMethod("FLifePar", signature(object="FLStocks"), function(object) {
 #' 
 #' @seealso 
 #' \code{\link[FLCore]{FLStock}}, \code{\link[FLCore]{FLQuants}}
-#' 
-#' @references 
 setMethod( 'kobe',  signature(path='FLStock',method="missing"), 
            function(path, method, ...){ 
                names(attributes(path)$eqsim)    =tolower(names(attributes(path)$eqsim))
@@ -267,5 +265,47 @@ setMethod( 'kobe',signature(path='FLBRP',method="logical"),
     rtn=subset(reshape2::melt(rtn[,1:10],names(rtn)[1:6]),value==1)[,-8]
     
     return(rtn)})
-    
+#' @rdname calcLc
+#' @export
+setMethod("calcLc", signature(object = "FLQuant"),
+          function(object, prob = 0.5) {
+            dat = subset(as.data.frame(object), data > 0)
+            if (nrow(dat) == 0) return(NA)
+            
+            dat = plyr::ddply(dat, .(len), with, cumsum(sum(data)) / sum(data))
+            dat$V1 = cumsum(dat$V1) / sum(dat$V1)
+            
+            idx = which(abs(dat$V1 - prob) == min(abs(dat$V1 - prob)))
+            if (length(idx) > 0) {
+              dat[idx[1], "len"]
+            } else {
+              NA
+            }
+          })
+
+#' @rdname checkVariation
+#' @export
+setMethod("checkVariation", signature(object = "FLStock"),
+          function(object) {
+            mData = m(object)
+            wtData = stock.wt(object)
+            matData = mat(object)
+            
+            data.frame(
+              mAge = !all(mData[1, ] == apply(mData, 2, mean)),
+              mYr = !all(apply(mData, 2, mean) == mean(mData[, 1])),
+              massYr = !all(apply(wtData, 2, mean) == mean(wtData[, 1])),
+              matYr = !all(apply(matData, 2, mean) == mean(matData[, 1]))
+            )
+          })
+
+#' @rdname checkVariation
+#' @export
+setMethod("checkVariation", signature(object = "FLStocks"),
+          function(object) {
+            result = plyr::ldply(object, checkVariation)
+            names(result)[1] = ".id"
+            result
+          })
+
     

@@ -87,14 +87,8 @@ if (!dir.exists(vignetteDataDir) || vignetteDataDir == "") {
 Biological assumptions and variation by age, and year 
 
 ```{r, vary}
-vary = plyr::ldply(icesdata, function(x) {
-    data.frame(
-    mAge = !all(m(x)[1, ] == apply(m(x), 2, mean)),
-    mYr = !all(apply(m(x), 2, mean) == mean(m(x)[, 1])),
-    massYr = !all(apply(stock.wt(x), 2, mean) == mean(stock.wt(x)[, 1])),
-    matYr = !all(apply(mat(x), 2, mean) == mean(mat(x)[, 1]))
-  )
-})
+# Check parameter variation using package function
+vary = checkVariation(icesdata)
 
 vary = transform(vary,
   mByAge = ifelse(mAge, "M varys by Age", "M constant by Age"),

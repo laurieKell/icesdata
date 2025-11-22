@@ -180,13 +180,7 @@ Calculate length-based indicators and compare with reference points from Beverto
 load(file.path(vignetteDataDir, "eq.RData"), envir = .GlobalEnv)
 load(file.path(vignetteDataDir, "lsmps.RData"), envir = .GlobalEnv)
 
-# Function to calculate length at 50% maturity
-calcLc = function(object) {
-  dat = subset(as.data.frame(object), data > 0)
-  dat = plyr::ddply(dat, .(len), with, cumsum(sum(data)) / sum(data))
-  dat$V1 = cumsum(dat$V1) / sum(dat$V1)
-  dat[(abs(dat$V1 - 0.5) == min(abs(dat$V1 - 0.5))), "len"][1]
-}
+# calcLc is now provided by the icesdata package
 
 # Calculate length indicators
 lind = plyr::mdply(data.frame(.id = names(icesdata)), function(.id) {

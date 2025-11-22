@@ -35,8 +35,6 @@ setMethod("tseries", signature(object="FLStocks"),
 #' @param object an \code{FLBRP} object 
 #' @param seasons a numeric with seasons
 #' 
-#' @aliases
-#' 
 #' @return \code{FLQuants} object
 #'
 #' @seealso \code{\link{expand}}

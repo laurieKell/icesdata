@@ -684,3 +684,56 @@ setGeneric('plotLengths', function(x, ...) standardGeneric('plotLengths'))
 #'
 #' @export
 setGeneric("curveSS", function(object,...) standardGeneric("curveSS"))
+
+#' Calculate Length at Capture
+#' 
+#' @description
+#' Calculates the length at which a specified proportion of individuals are captured.
+#' This is typically used to determine Lc (length at 50% capture) for length-based
+#' stock assessment methods.
+#' 
+#' @param object An FLQuant object containing length-frequency data
+#' @param prob Probability threshold for capture (default: 0.5 for 50% capture)
+#' @param ... Additional arguments
+#' 
+#' @return Numeric value representing length at capture
+#' 
+#' @export
+#' 
+#' @examples
+#' \dontrun{
+#' data(icesdata)
+#' # Assuming lsmps contains length samples
+#' lc = calcLc(lsmps[[1]])
+#' }
+setGeneric("calcLc", function(object, prob = 0.5, ...) {
+  standardGeneric("calcLc")
+})
+
+#' Check Parameter Variation
+#' 
+#' @description
+#' Determines if biological parameters vary by age and/or year in an FLStock object.
+#' Checks for variation in natural mortality (M), stock weight, and maturity.
+#' 
+#' @param object An FLStock or FLStocks object
+#' @param ... Additional arguments
+#' 
+#' @return A data.frame with logical values indicating variation:
+#'   \item{mAge}{Logical: M varies by age}
+#'   \item{mYr}{Logical: M varies by year}
+#'   \item{massYr}{Logical: Stock weight varies by year}
+#'   \item{matYr}{Logical: Maturity varies by year}
+#'   For FLStocks, also includes .id column
+#' 
+#' @export
+#' 
+#' @examples
+#' \dontrun{
+#' data(icesdata)
+#' vary = checkVariation(icesdata[[1]])
+#' varyAll = checkVariation(icesdata)
+#' }
+setGeneric("checkVariation", function(object, ...) {
+  standardGeneric("checkVariation")
+})
