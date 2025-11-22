@@ -176,7 +176,7 @@ save(lbi, file = file.path(vignetteDataDir, "lbi.RData"))
 Calculate length-based indicators and compare with reference points from Beverton-Holt and Ricker SRRs.
 
 ```{r, class-len}
-# Load equilibrium models (from 03_nonstationary-methods.Rmd)
+# Load equilibrium models (from 02_nonstationary-methods.Rmd)
 load(file.path(vignetteDataDir, "eq.RData"), envir = .GlobalEnv)
 load(file.path(vignetteDataDir, "lsmps.RData"), envir = .GlobalEnv)
 
