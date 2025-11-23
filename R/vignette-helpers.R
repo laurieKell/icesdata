@@ -152,3 +152,72 @@ get_vignette_data_dir <- function(subdir = NULL) {
   return(NULL)
 }
 
+#' Get Vignette Output Directory
+#' 
+#' Returns the path to the vignette output directory (data/vignette-outputs).
+#' Creates the directory if it doesn't exist. This is a simplified version
+#' specifically for saving vignette outputs.
+#' 
+#' @return Character vector with output directory path
+#' @export
+#' @examples
+#' \dontrun{
+#' vignetteDataDir <- get_vignette_output_dir()
+#' save(myData, file = file.path(vignetteDataDir, "myData.RData"))
+#' }
+get_vignette_output_dir <- function() {
+  outputDir = file.path("data", "vignette-outputs")
+  if (!dir.exists(outputDir)) {
+    dir.create(outputDir, recursive = TRUE)
+  }
+  return(outputDir)
+}
+
+#' Load All ICES Package Data
+#' 
+#' Convenience function to load all standard ICES data objects at once.
+#' Loads \code{icesdata}, \code{info}, \code{spp}, and \code{lw} using \code{data()}.
+#' 
+#' @return Invisibly returns TRUE on success
+#' @export
+#' @examples
+#' \dontrun{
+#' # In a vignette
+#' load_all_ices_data()
+#' # Now icesdata, info, spp, and lw are available
+#' }
+load_all_ices_data <- function() {
+  data(icesdata, envir = parent.frame())
+  data(info, envir = parent.frame())
+  data(spp, envir = parent.frame())
+  data(lw, envir = parent.frame())
+  invisible(TRUE)
+}
+
+#' Load Optional Packages
+#' 
+#' Attempts to load multiple optional packages, only loading those that are available.
+#' Useful for vignettes where some packages may not be installed.
+#' 
+#' @param packages Character vector of package names to load
+#' @param quietly Logical, if TRUE (default) suppresses messages and warnings
+#' @return Logical vector indicating which packages were successfully loaded
+#' @export
+#' @examples
+#' \dontrun{
+#' # In a vignette
+#' load_optional_packages(c("ggplotFL", "FLCandy", "rpart"))
+#' }
+load_optional_packages <- function(packages, quietly = TRUE) {
+  loaded = sapply(packages, function(pkg) {
+    if (requireNamespace(pkg, quietly = quietly)) {
+      library(pkg, character.only = TRUE, quietly = quietly)
+      TRUE
+    } else {
+      FALSE
+    }
+  })
+  names(loaded) = packages
+  return(loaded)
+}
+
