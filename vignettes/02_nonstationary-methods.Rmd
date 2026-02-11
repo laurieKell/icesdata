@@ -316,7 +316,7 @@ SSB, fishing mortality, harvest rate, and mean natural mortality.
 ```{r, ts}
 ts = tseries(icesdata)
   
-  # Save to vignette data directory
+# Save to vignette data directory
 save(ts, file = file.path(vignetteDataDir, "ts.RData"))
 ```
 

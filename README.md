@@ -81,3 +81,19 @@ devtools::install_github("lauriekell/FLCandy", ref = "refactored")
 ```
 - FLBRP, FLife, FLasher (for advanced FLR functionality)
 - doParallel, foreach, parallel (for parallel processing in vignettes)
+
+
+
+Henning Winker, Massimiliano Cardinale, Rishi Sharma, Laurie Kell, Iago Mosqueira, Christopher A. Griffiths 2025. Assessing the progress of stock rebuilding in the Northeast Atlantic against levels that can produce Maximum Sustainable Yield. Fish and Fisheries, conditionally accepted.
+
+Christopher A. Griffiths, H??kan Wennhage, Henning Winker, Valerio Bartolino, Alessandro Orio, and Massimiliano Cardinale 2023. Including older fish in fisheries management: new age-based indicators and reference points for commercial fish stocks. Fish and Fisheries, doi: 10.1111/faf.12789.
+
+Massimiliano Cardinale, Henning Winker, Alessandro Orio, Christopher A. Griffiths, Valerio Bartolino and Laurie Kell 2024. Occurrence, strength, and impact of density-dependent processes in key productivity parameters of Northeast Atlantic stocks. Ecology and evolution, https://doi.org/10.1002/ece3.70375.
+
+Massimiliano Cardinale, Laurence T. Kell, Henning Winker, Christopher A. Griffiths and Iago Mosqueira 2025. Integrating historical catches does not reveal higher current stock depletion in Northeast Atlantic stock assessments. Submitted to ICES JMS.
+
+Laurence T. Kell$, Tobias K. Mildenberger, Christopher A. Griffiths, Marc H. Taylor,  Massimiliano Cardinale, Casper W. Berg 2025. Biomass Reference Points Based on Rebuilding Time: A Risk-Equivalent, Forward-Looking Framework for Fisheries Management. In preparation.
+
+Kell, Laurence T., Massimiliano Cardinale, Iago Mosqueira, Henning Winker, and Rishi Sharma. 2025. "Transforming Data and Capacity-Limited Stock Assessment: Achieving Risk Equivalence with Hierarchical Assessment Frameworks and Auxiliary Data" Sustainability 17, no. 21: 9383. https://doi.org/10.3390/su17219383
+
+
