@@ -9,8 +9,8 @@ setMethod("tseries", signature(object="FLStock"),
                                     ssb  =function(object) ssb(object),
                                     f    =function(object) fbar(object),
                                     h    =function(object) catch(object)/ebiomass(object),
-                                    m    =function(object) FLCore::FLQuant(plyr::aaply(FLCore::m(object)[FLCore::ac(FLCore::range(object)["minfbar"]:FLCore::range(object)["maxfbar"])],2,mean),
-                                                                   dimnames=dimnames(FLCore::fbar(object))))){
+                                    m    =function(object) FLQuant(plyr::aaply(m(object)[FLCore::ac(range(object)["minfbar"]:range(object)["maxfbar"])],2,mean),
+                                                                   dimnames=dimnames(fbar(object))))){
             model.frame(FLCore::metrics(object,flqs),drop=TRUE)})
 
 #' @rdname tseries
@@ -21,7 +21,7 @@ setMethod("tseries", signature(object="FLStocks"),
                                     ssb  =function(object) ssb(object),
                                     f    =function(object) fbar(object),
                                     h    =function(object) catch(object)/ebiomass(object),
-                                    m    =function(object) FLCore::FLQuant(plyr::aaply(FLCore::m(object)[FLCore::ac(FLCore::range(object)["minfbar"]:FLCore::range(object)["maxfbar"])],2,mean),
+                                    m    =function(object) FLCore::FLQuant(plyr::aaply(FLCore::m(object)[FLCore::ac(range(object)["minfbar"]:range(object)["maxfbar"])],2,mean),
                                                                    dimnames=dimnames(FLCore::fbar(object))))){
             result=lapply(object, tseries, flqs=flqs)
             rtn=do.call(rbind, result)
