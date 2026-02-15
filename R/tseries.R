@@ -1,3 +1,61 @@
+setMethod("tseries", signature(object="FLBRPs"), function(object){
+  plyr::ldply(object, function(x) model.frame(tseries(x)), .id=NULL)})
+
+# Note: Generics for ebiomass and stdz are defined in generic.R
+# This file contains only method definitions for tseries
+
+#' Calculate Exploitable Biomass
+#'
+#' @description
+#' Calculates the exploitable biomass from an FLStock object using selectivity-weighted
+#' catch weights and stock numbers.
+#'
+#' @param object An object of class FLStock
+#'
+#' @return An FLQuant object containing the exploitable biomass time series
+#'
+#' @details
+#' Exploitable biomass is based on weighting catch weights by selectivity normalised 
+#' by peak selectivity, then multiplying by stock numbers and summing across ages
+#'
+#' @examples
+#' \dontrun{
+#' data(ple4)
+#' eb <- ebiomass(ple4)
+#' }
+#' @rdname stdz
+#' @export
+setMethod("stdz", signature(object="numeric"),
+          function(object, na.rm=TRUE) {
+            object=object-mean(  object, na.rm=na.rm)
+            object/sqrt(var(object, na.rm=na.rm))
+          })
+
+#' @rdname stdz
+#' @export
+setMethod("stdz", signature(object="matrix"),
+          function(object, na.rm=TRUE) {
+            object=object-mean(object, na.rm=na.rm)
+            object/sqrt(var(object, na.rm=na.rm))
+          })
+
+#' @rdname stdz
+#' @export
+setMethod("stdz", signature(object="array"),
+          function(object, na.rm=TRUE) {
+            object=object-mean(object, na.rm=na.rm)
+            object/sqrt(var(object, na.rm=na.rm))
+          })
+
+#' @rdname stdz
+#' @export
+setMethod("stdz", signature(object="FLQuant"),
+          function(object, na.rm=TRUE) {
+            object=object-mean(object, na.rm=na.rm)
+            object/sqrt(var(object, na.rm=na.rm))
+          })
+
+
 # Note: Generic for tseries is defined in generic.R
 # This file contains only method definitions
 
@@ -22,7 +80,7 @@ setMethod("tseries", signature(object="FLStocks"),
                                     f    =function(object) fbar(object),
                                     h    =function(object) catch(object)/ebiomass(object),
                                     m    =function(object) FLCore::FLQuant(plyr::aaply(FLCore::m(object)[FLCore::ac(range(object)["minfbar"]:range(object)["maxfbar"])],2,mean),
-                                                                   dimnames=dimnames(FLCore::fbar(object))))){
+                                                                           dimnames=dimnames(FLCore::fbar(object))))){
             result=lapply(object, tseries, flqs=flqs)
             rtn=do.call(rbind, result)
             rtn=cbind(.id=gsub("\\.([^.]+)$","",dimnames(rtn)[[1]]),rtn)
@@ -96,64 +154,5 @@ setMethod("tseries", signature(object="FLBRP"), function(object){
       rtn[[i]][chk]=NA}
   
   rtn})
-
-setMethod("tseries", signature(object="FLBRPs"), function(object){
-  plyr::ldply(object, function(x) model.frame(tseries(x)), .id=NULL)})
-
-# Note: Generics for ebiomass and stdz are defined in generic.R
-# This file contains only method definitions for tseries
-
-#' Calculate Exploitable Biomass
-#'
-#' @description
-#' Calculates the exploitable biomass from an FLStock object using selectivity-weighted
-#' catch weights and stock numbers.
-#'
-#' @param object An object of class FLStock
-#'
-#' @return An FLQuant object containing the exploitable biomass time series
-#'
-#' @details
-#' Exploitable biomass is based on weighting catch weights by selectivity normalised 
-#' by peak selectivity, then multiplying by stock numbers and summing across ages
-#'
-#' @examples
-#' \dontrun{
-#' data(ple4)
-#' eb <- ebiomass(ple4)
-#' }
-#' @rdname stdz
-#' @export
-setMethod("stdz", signature(object="numeric"),
-          function(object, na.rm=TRUE) {
-            object=object-mean(  object, na.rm=na.rm)
-            object/sqrt(var(object, na.rm=na.rm))
-          })
-
-#' @rdname stdz
-#' @export
-setMethod("stdz", signature(object="matrix"),
-          function(object, na.rm=TRUE) {
-            object=object-mean(object, na.rm=na.rm)
-            object/sqrt(var(object, na.rm=na.rm))
-          })
-
-#' @rdname stdz
-#' @export
-setMethod("stdz", signature(object="array"),
-          function(object, na.rm=TRUE) {
-            object=object-mean(object, na.rm=na.rm)
-            object/sqrt(var(object, na.rm=na.rm))
-          })
-
-#' @rdname stdz
-#' @export
-setMethod("stdz", signature(object="FLQuant"),
-          function(object, na.rm=TRUE) {
-            object=object-mean(object, na.rm=na.rm)
-            object/sqrt(var(object, na.rm=na.rm))
-          })
-
-
 
 
