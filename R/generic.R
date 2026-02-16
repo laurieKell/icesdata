@@ -212,10 +212,6 @@ setGeneric("globalMsy", function(object, ...)
 #' @description Harvest Control Rule, calculates Total Allowable Catch (TAC) based on a hockey stock harvest control rule.
 #' @author Laurence Kell, Sea++
 #'  
-#' @usage hcrICES(object,eql,sr_deviances,params, 
-#'          start=max(dimnames(object)$year)-10, end=start+10, interval=1,
-#'          err=NULL,bndTac=c(0,Inf),...)
-#'          
 #' @param object an object of class \code{FLStock} 
 #' @param eql \code{FLBRP} with a stock recruitment relationship used for projection
 #' @param sr_deviances \code{FLQuant} recuitment deviates on the log scale, i.e. multiplicative
