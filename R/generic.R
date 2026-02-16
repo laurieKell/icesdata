@@ -30,9 +30,9 @@
 #' @aliases pt pt-method pt,FLPar-method pt,numeric-method pt,FLBRP-method
 #'
 #' @export
-setGeneric("pt", 
-           function(object, ...) 
-             standardGeneric("pt"))
+setGeneric("pt", function(object, ...) {
+  standardGeneric("pt")
+})
 
 #' Calculate the reference age for a FLBRP object.
 #'
@@ -89,8 +89,9 @@ setGeneric("abiMsy", function(object, ref = "msy", p = 0.9) {
 #' @param ... Additional arguments
 #'
 #' @export
-setGeneric("crosstest", function(object, ...)
-  standardGeneric("crosstest"))
+setGeneric("crosstest", function(object, ...) {
+  standardGeneric("crosstest")
+})
 
 #' Calculate Blim Reference Point
 #' 
@@ -193,8 +194,9 @@ setGeneric("tseries", function(object, ...) standardGeneric("tseries"))
 #' @param ... Additional arguments
 #'
 #' @export
-setGeneric("globalMsy", function(object, ...)
-  standardGeneric("globalMsy"))
+setGeneric("globalMsy", function(object, ...) {
+  standardGeneric("globalMsy")
+})
 
 # globalMsy {{{
 #' @rdname globalMsy
@@ -438,8 +440,9 @@ setGeneric("invALK", function(object, model=NULL, age, cv=0.1, lmax=1.2, bin=1, 
 #' @param ... Additional arguments
 #'
 #' @export
-setGeneric("m1", function(object, ...)
-  standardGeneric("m1"))
+setGeneric("m1", function(object, ...) {
+  standardGeneric("m1")
+})
 
 #' Natural Mortality M2
 #'
@@ -450,8 +453,9 @@ setGeneric("m1", function(object, ...)
 #' @param ... Additional arguments
 #'
 #' @export
-setGeneric("m2", function(object, ...)
-  standardGeneric("m2"))
+setGeneric("m2", function(object, ...) {
+  standardGeneric("m2")
+})
 
 #' Forage Index
 #'
@@ -462,8 +466,9 @@ setGeneric("m2", function(object, ...)
 #' @param ... Additional arguments
 #'
 #' @export
-setGeneric("forage", function(object, ...)
-  standardGeneric("forage"))
+setGeneric("forage", function(object, ...) {
+  standardGeneric("forage")
+})
 
 #' Predator Need
 #'
@@ -474,8 +479,9 @@ setGeneric("forage", function(object, ...)
 #' @param ... Additional arguments
 #'
 #' @export
-setGeneric("predNeed", function(object, ...)
-  standardGeneric("predNeed"))
+setGeneric("predNeed", function(object, ...) {
+  standardGeneric("predNeed")
+})
 
 
 #' Calculate priors for an `FLBRP` based on reference points and observations.
@@ -529,8 +535,9 @@ setGeneric("calcPriors", function(object, ...) {
 #' plot(ple4brp,ncol=2)
 #' }
 #' 
-setGeneric("properties", function(object, ...)
-  standardGeneric("properties"))
+setGeneric("properties", function(object, ...) {
+  standardGeneric("properties")
+})
 
 
 #' @title Calculate True Skill Statistic (TSS)
