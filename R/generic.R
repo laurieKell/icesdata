@@ -425,8 +425,9 @@ setGeneric("benchmark", function(object, ...) {
 #' @param ... Additional arguments
 #'
 #' @export
-setGeneric("invALK", function(object, model=NULL, age, cv=0.1, lmax=1.2, bin=1, max=ceiling(object["linf"]*lmax), reflen=NULL, ...) 
-  standardGeneric("invALK"))
+setGeneric("invALK", function(object, model=NULL, age, cv=0.1, lmax=1.2, bin=1, max=ceiling(object["linf"]*lmax), reflen=NULL, ...) {
+  standardGeneric("invALK")
+})
 
 #' Natural Mortality M1
 #'
