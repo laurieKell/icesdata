@@ -7,7 +7,7 @@ setMethod("ebiomass", signature(object="FLStock"),
             eb.wt <- qmax(wt, 0.000001)
             
             apply(eb.wt %*% stock.n(object), 2:6, sum)
-          })
+          }) 
 
 setMethod("ebiomass", signature(object="FLBRP"),
           function(object) {
