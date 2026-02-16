@@ -415,7 +415,7 @@ setGeneric("benchmark", function(object, ...) {
 #' Generic function for inverse age-length key analysis
 #'
 #' @param object An object containing length data
-#' @param model Growth model function (default: vonbert)
+#' @param model Growth model function (default: NULL, will use vonbert from FLife if available)
 #' @param age Age vector
 #' @param cv Coefficient of variation (default: 0.1)
 #' @param lmax Maximum length multiplier (default: 1.2)
@@ -425,7 +425,7 @@ setGeneric("benchmark", function(object, ...) {
 #' @param ... Additional arguments
 #'
 #' @export
-setGeneric("invALK", function(object, model=vonbert, age, cv=0.1, lmax=1.2, bin=1, max=ceiling(object["linf"]*lmax), reflen=NULL, ...) 
+setGeneric("invALK", function(object, model=NULL, age, cv=0.1, lmax=1.2, bin=1, max=ceiling(object["linf"]*lmax), reflen=NULL, ...) 
   standardGeneric("invALK"))
 
 #' Natural Mortality M1
