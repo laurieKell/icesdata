@@ -425,8 +425,7 @@ setGeneric("benchmark", function(object, ...) {
 #' @param ... Additional arguments
 #'
 #' @export
-setGeneric("invALK", function(object, model=vonbert, age, 
-                              cv=0.1, lmax=1.2, bin=1, max=ceiling(object["linf"]*lmax), reflen=NULL, ...) 
+setGeneric("invALK", function(object, model=vonbert, age, cv=0.1, lmax=1.2, bin=1, max=ceiling(object["linf"]*lmax), reflen=NULL, ...) 
   standardGeneric("invALK"))
 
 #' Natural Mortality M1
@@ -498,8 +497,9 @@ setGeneric("calcPriors", function(object, ...) {
 #' @importFrom stats optimize
 #' @examples
 #' \dontrun{
-#'   eql=FLBRP(...)  # Create or load an FLBRP object
-#'   calcPriors(eql)
+#'   # Create or load an FLBRP object
+#'   # eql <- FLBRP(...)
+#'   # calcPriors(eql)
 #' }
 
 #' @title properties 
@@ -649,8 +649,9 @@ setGeneric("priors", function(object, ...) {
 #' 
 #' @examples
 #' \dontrun{
-#'   eql=FLBRP(...)  # Create or load an FLBRP object
-#'   priors(eql)
+#'   # Create or load an FLBRP object
+#'   # eql <- FLBRP(...)
+#'   # priors(eql)
 #' }
 
 #' Leslie Matrix Analysis
